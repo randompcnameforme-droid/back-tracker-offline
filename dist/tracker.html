@@ -76,13 +76,11 @@ button{cursor:pointer}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.stop{background:var(--stop-soft);color:var(--stop)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
-.wbar{display:flex;align-items:center;gap:10px;padding:8px 0 10px;flex-wrap:wrap}
-.wbar[hidden]{display:none!important}
 .wchip{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:6px 10px;background:var(--accent-soft);color:var(--accent);font:600 15px/1.2 var(--font-head);font-variant-numeric:tabular-nums}
 .wchip.timer{background:var(--ok-soft);color:var(--ok)}
 .wchip.over{background:var(--warn-soft);color:var(--warn)}
 .wchip.rest{background:var(--surface2);color:var(--ink2)}
-.wrap{max-width:620px;margin:0 auto;padding-block:14px calc(110px + env(safe-area-inset-bottom,0px));display:grid;gap:16px}
+.wrap{max-width:620px;margin:0 auto;padding-block:14px calc(110px + var(--dock-h,0px) + env(safe-area-inset-bottom,0px));display:grid;gap:16px}
 .stack{display:grid;gap:16px;min-width:0}
 .stack.tight{gap:8px}
 .banner{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:500}
@@ -351,6 +349,46 @@ tr:last-child td{border-bottom:0}
 .abtn.undo{cursor:pointer}
 .tick.stick{width:44px;height:44px}
 .tick.stick svg{width:20px;height:20px}
+/* v3.10 session dock: fixed above the tab bar */
+.dock{position:fixed;left:0;right:0;bottom:var(--tabs-h,58px);z-index:9;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.10);
+  padding:6px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px))}
+.dock[hidden]{display:none!important}
+.dock-in{max-width:620px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;min-width:0}
+.dock-row{display:flex;align-items:center;gap:6px;min-width:0}
+.dock-top{display:flex;align-items:center;gap:6px;font:600 14px/1.2 var(--font-head);font-variant-numeric:tabular-nums;color:var(--ink2)}
+.dock-sp{flex:1}
+.dock-top .over{color:var(--warn)}
+.dock-chev{flex:none;width:44px;height:36px;border:0;background:none;display:grid;place-items:center;color:var(--ink2);padding:0;transform:rotate(90deg)}
+.dock-chev[aria-expanded="false"]{transform:rotate(-90deg)}
+.dock-unit{font:600 17px/1.25 var(--font-head);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dock-clockrow{display:flex;align-items:baseline;gap:10px}
+.dock-big{font:700 40px/1 var(--font-head);font-variant-numeric:tabular-nums;color:var(--ink)}
+.dock-big.reached{color:var(--ok)}
+.dock-steps{display:grid;gap:8px}
+.dock-step{display:grid;gap:2px;min-width:0}
+.dock-main{width:100%;height:64px;border:0;border-radius:14px;background:var(--accent);color:var(--accent-ink);font:700 20px/1 var(--font-head)}
+.dock-main.stop{background:var(--stop-solid);color:var(--on-stop)}
+.dock-main.fin{background:var(--ok-solid);color:var(--on-ok)}
+.dock-main.small{width:auto;flex:none;height:48px;padding:0 18px;font-size:17px}
+.dock-links{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:14px;color:var(--ink2);min-height:36px}
+.dock-links .textbtn{min-height:36px;padding:0 6px}
+.dock-last{flex:1;min-width:0;display:flex;align-items:center}
+.dock-lt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dock-last .textbtn{flex:none}
+.dock-lr{flex:none;display:flex}
+.dock-another{justify-self:start;min-height:36px}
+.dock-strip{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 0}
+.dock-strip::-webkit-scrollbar{display:none}
+.dock-strip[aria-disabled="true"]{opacity:.4}
+.dchip{flex:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-weight:600;font-size:14px;white-space:nowrap;color:var(--ink)}
+.dchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dock-all{flex:none;min-height:44px}
+.dock-cclock{flex:none;font:700 18px/1 var(--font-head);font-variant-numeric:tabular-nums}
+.dock-cclock.reached{color:var(--ok)}
+.dock-cname{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock-fin{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:44px;display:flex;align-items:center}
+.dall-row{display:flex;align-items:center}
+.dall-row .row-text{flex:1}
 </style>
 <div class="bar"><div class="bar-in">
   <div class="bar-main" id="barMain"></div>
@@ -358,15 +396,16 @@ tr:last-child td{border-bottom:0}
     <button type="button" class="hbtn flag" id="flagBtn" aria-label="Red flags"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.8l9 15.7H3z"/><path d="M12 10v4.2"/><path d="M12 17.2h.01"/></svg></button>
     <button type="button" class="savebtn" id="saveBtn"><span class="pill" id="save" aria-live="polite"><span class="dot"></span><span id="saveTxt">Saved</span></span></button>
   </div>
-</div><div class="barchip" id="barChip" hidden></div><div class="wbar" id="wbar" hidden></div></div>
+</div><div class="barchip" id="barChip" hidden></div></div>
 <main class="wrap"><div id="view" class="stack"></div></main>
+<div class="dock" id="dock" hidden role="region" aria-label="Session dock"></div>
 <nav class="tabs" id="tabs" aria-label="Sections"></nav>
 <script>
 (function(){
 "use strict";
 /* ================= CORE HELPERS ================= */
-var APP_VERSION="3.9.0";
-var APP_CHANGES="Waking pain and sleep now go in the Morning card under SLS, with charts in Progress › SLS. Importing from the offline app now warns when a day was already logged here.";
+var APP_VERSION="3.10.0";
+var APP_CHANGES="New session dock at the bottom of every tab: one Start/Stop button, tap any exercise in the strip to switch, in any order. Holds keep counting past the target. Home and office blocks are timed too.";
 var DAY_TYPES=[["gym","Gym"],["home","Home"],["office","Office"]];
 var ICON={
   check:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
@@ -663,7 +702,7 @@ function daySections(d){
 }
 function typeLabel(t){var r=DAY_TYPES.filter(function(p){return p[0]===t})[0];return r?r[1]:t}
 function emptyDay(date){return {date:date,dayType:null,alsoTypes:{},session:null,variantBySlot:{},shortVersion:false,officeDepleted:false,
-  sls:{right:{},left:{},floor:null,scattered:false},items:{},entries:{},events:{},extras:{},endOfDay:{}}}
+  sls:{right:{},left:{},floor:null,scattered:false},items:{},entries:{},events:{},extras:{},endOfDay:{},dock:{}}}
 function normSls(s){ // accept old array form
   s=s||{};var o={right:{},left:{},floor:s.floor==null?null:s.floor,scattered:!!s.scattered};
   ["right","left"].forEach(function(sd){var v=s[sd];
@@ -675,7 +714,7 @@ function normDay(d,date){
   var e=emptyDay(date);if(!d)return e;
   var o=Object.assign(e,clone(d));
   o.sls=normSls(d.sls);
-  ["items","entries","events","extras","variantBySlot","endOfDay","alsoTypes","morning"].forEach(function(k){if(!isObj(o[k]))o[k]={}});
+  ["items","entries","events","extras","variantBySlot","endOfDay","alsoTypes","morning","dock"].forEach(function(k){if(!isObj(o[k]))o[k]={}});
   return o;
 }
 function dayView(date){
@@ -869,30 +908,35 @@ function activeTimer(d){
   evs.forEach(function(e){if(e.type==="start")open=e;else if(e.type==="stop"&&open&&e.slot===open.slot&&e.side===open.side&&e.setNo===open.setNo)open=null});
   return open;
 }
+/* Sessions (3.10): workout-start / workout-end carry ctx "gym" | "home" | "office" (none = gym, all older data).
+   A session runs from a start to the next end with the same ctx; a day can hold several.
+   start/end keep their old meaning for the gym session (first gym start, last gym end) so older code and charts work. */
 function workoutState(d){
-  var evs=eventsOf(d),start=null,end=null;
-  evs.forEach(function(e){if(e.type==="workout-start"){start=e.t;end=null}else if(e.type==="workout-end")end=e.t});
-  return {start:start,end:end,running:!!start&&!end};
+  var evs=eventsOf(d),sessions=[],open={};
+  evs.forEach(function(e){var ctx=e.ctx||"gym";
+    if(e.type==="workout-start"){if(!open[ctx]){var s={ctx:ctx,start:e.t,end:null,id:e.id};open[ctx]=s;sessions.push(s)}}
+    else if(e.type==="workout-end"){if(open[ctx]){open[ctx].end=e.t;open[ctx].endId=e.id;open[ctx]=null}}});
+  var cur=null;sessions.forEach(function(s){if(!s.end)cur=s});
+  var gym=sessions.filter(function(s){return s.ctx==="gym"});
+  var start=gym.length?gym[0].start:null,end=gym.length&&gym.every(function(s){return s.end})?gym[gym.length-1].end:null;
+  return {sessions:sessions,current:cur,running:!!cur,start:start,end:end};
 }
 function lastStop(d){var evs=eventsOf(d),t=null;evs.forEach(function(e){if(e.type==="stop")t=e;});return t}
-function startTimer(def,side,n){
-  var d=D(),now=Date.now(),patch={events:{}},act=activeTimer(d);
-  if(act){mergeInto(patch,stopPatch(d,act,now))}
-  mergeInto(patch,addEvent({t:now,type:"start",slot:def.id,side:side||null,setNo:n}));
-  var ws=workoutState(d);if(hasType(d,"gym")&&!ws.start)mergeInto(patch,addEvent({t:now-1,type:"workout-start"}));
-  patchDay(patch);TIMER.beeped=false;ensureAudio();requestWake();
-}
-function stopPatch(d,act,now){
+/* Stop writes the set: done, the values given (from the dock's steppers), startedAt/endedAt. A hold's seconds are its
+   timed length; a minutes item's minutes are its timed length. Nothing ever stops by itself. */
+function stopPatch(d,act,now,vals){
   var def=anyDef(act.slot,d);var patch=addEvent({t:now,type:"stop",slot:act.slot,side:act.side,setNo:act.setNo});
   if(def){def=effDef(def,d);var id=entryId(act.slot,act.side,act.setNo),ex=d.entries[id];
     var e={slot:act.slot,exerciseId:def.exerciseId||null,side:act.side||null,setNo:act.setNo,done:true,startedAt:new Date(act.t).toISOString(),endedAt:new Date(now).toISOString(),editedAt:new Date().toISOString(),deleted:false};
+    if(def.variantKey)e.variant=def.variantKey;
     if(!ex||ex.deleted)e.loggedAt=new Date().toISOString();
+    if(vals)fieldsOf(def).forEach(function(f){if(vals[f]!=null)e[f]=vals[f]});
     if(def.measure==="hold")e.holdS=Math.round((now-act.t)/1000);
+    if(def.measure==="minutes")e.minutes=Math.max(1,Math.round((now-act.t)/60000));
     patch.entries={};patch.entries[id]=e;
-    var after=deepMerge(d,patch);var ch=statusChain(def,after);if(ch)patch.items=ch;}
+    patch.items={};patch.items[act.slot]={skipped:false};}
   return patch;
 }
-function stopTimer(){var d=D(),act=activeTimer(d);if(!act)return;patchDay(stopPatch(d,act,Date.now()));stopAlarm();if(!workoutState(D()).running)releaseWake()}
 
 /* ================= DERIVED DOCUMENTS ================= */
 var derivedTimers={},derivedLast={};
@@ -930,19 +974,34 @@ function adherence(d){
   var mob=false;["mob-1","mob-2","mob-3"].forEach(function(m){var s=shownStatus(P.defs[m],d);if(s==="done"||s==="partial")mob=true});
   return {planned:planned,done:done,mobility:mob};
 }
-function sessionTiming(d){
+/* Timing for one session (sess = {start,end}) or, with none given, the gym session (whole day when there is no gym session).
+   Intervals are taken in time order, whatever the programme order: a gap is rest when the previous interval was the same slot,
+   and between exercises when it was a different one. */
+function sessionTiming(d,sess){
   var ivs=[];
   for(var id in d.entries){var e=d.entries[id];if(!e||e.deleted||!e.startedAt||!e.endedAt)continue;
     var def=anyDef(e.slot,d);ivs.push({s:Date.parse(e.startedAt),e:Date.parse(e.endedAt),slot:e.slot,side:e.side,setNo:e.setNo,stretch:isStretch(def),name:def?def.name:e.slot})}
   ivs.sort(function(a,b){return a.s-b.s});
-  var ws=workoutState(d);
-  var start=ws.start||(ivs[0]&&ivs[0].s),end=ws.end||(ivs.length&&ivs[ivs.length-1].e);
+  if(!sess){var ws=workoutState(d);if(ws.start)sess={start:ws.start,end:ws.end}}
+  if(sess)ivs=ivs.filter(function(v){return v.s>=sess.start-2000&&(!sess.end||v.s<=sess.end)});
+  var start=(sess&&sess.start)||(ivs[0]&&ivs[0].s),end=(sess&&sess.end)||(ivs.length&&ivs[ivs.length-1].e);
   var work=0,stretch=0,rest=0,trans=0;
   ivs.forEach(function(v,i){var len=Math.max(0,v.e-v.s);if(v.stretch)stretch+=len;else work+=len;
     if(i>0){var gap=Math.max(0,v.s-ivs[i-1].e);if(ivs[i-1].slot===v.slot)rest+=gap;else trans+=gap}});
   var total=start&&end?Math.max(0,end-start):0;
   var untimed=Math.max(0,total-work-stretch-rest-trans);
   return {intervals:ivs,start:start||null,end:end||null,totalS:total/1000,workS:work/1000,stretchS:stretch/1000,restS:rest/1000,transitionS:trans/1000,untimedS:untimed/1000,timed:ivs.length>0};
+}
+/* sessionHistory record for a day: the old top-level fields for the gym session, plus every session in sessions{} keyed by its start. */
+function sessionRecord(d,exCount){
+  var t=sessionTiming(d),ws=workoutState(d);
+  var r={session:d.session||null,startedAt:t.start?new Date(t.start).toISOString():null,endedAt:t.end?new Date(t.end).toISOString():null,
+    totalS:Math.round(t.totalS),workS:Math.round(t.workS),restS:Math.round(t.restS),transitionS:Math.round(t.transitionS),stretchS:Math.round(t.stretchS),untimedS:Math.round(t.untimedS),
+    exerciseCount:exCount,timed:t.timed};
+  if(ws.sessions.length){r.sessions={};ws.sessions.forEach(function(se){if(!se.end)return;var x=sessionTiming(d,se);
+    r.sessions[new Date(se.start).toISOString()]={ctx:se.ctx,startedAt:new Date(se.start).toISOString(),endedAt:new Date(se.end).toISOString(),
+      totalS:Math.round(x.totalS),workS:Math.round(x.workS),restS:Math.round(x.restS),transitionS:Math.round(x.transitionS),stretchS:Math.round(x.stretchS),untimedS:Math.round(x.untimedS)}})}
+  return r;
 }
 async function writeDerived(date){
   if(!P)return;
@@ -956,10 +1015,7 @@ async function writeDerived(date){
   var ds={days:{}};ds.days[date]={dayType:d.dayType||null,session:d.session||null,sls:{r:v.r,l:v.l,floor:c.floor,scattered:c.scattered,n:c.n},
     planned:ad.planned,done:ad.done,mobility:ad.mobility,walkMinutes:walkMinutes(d),morning:morningOf(d),gym:hasType(d,"gym")&&ids.some(function(x){return sums[x].slots.some(function(s){return /^(pull|push|legs)-|^x:/.test(s)})})};
   enqueueIfChanged("d|"+date,"daySummary/all",ds);
-  if(hasType(d,"gym")||Object.keys(d.events).length){var t=sessionTiming(d);var sh={days:{}};
-    sh.days[date]={session:d.session||null,startedAt:t.start?new Date(t.start).toISOString():null,endedAt:t.end?new Date(t.end).toISOString():null,
-      totalS:Math.round(t.totalS),workS:Math.round(t.workS),restS:Math.round(t.restS),transitionS:Math.round(t.transitionS),stretchS:Math.round(t.stretchS),untimedS:Math.round(t.untimedS),
-      exerciseCount:ids.length,timed:t.timed};
+  if(hasType(d,"gym")||Object.keys(d.events).length){var sh={days:{}};sh.days[date]=sessionRecord(d,ids.length);
     enqueueIfChanged("s|"+date,"sessionHistory/all",sh);}
   // remember which exercises this day wrote, so removals are cleared next time
   var cur=d.derivedExercises||{},changed=false;Object.keys(dex).forEach(function(k){if(cur[k]!==dex[k])changed=true});
@@ -976,7 +1032,7 @@ async function rebuildHistory(progress){
     Object.keys(sums).forEach(function(x){(hist[x]=hist[x]||{days:{}}).days[r.id]=sums[x]});
     var c=slsCalc(d),v=slsVals(d),ad=adherence(d);
     dsum.days[r.id]={dayType:d.dayType||null,session:d.session||null,sls:{r:v.r,l:v.l,floor:c.floor,scattered:c.scattered,n:c.n},planned:ad.planned,done:ad.done,mobility:ad.mobility,walkMinutes:walkMinutes(d),morning:morningOf(d),gym:hasType(d,"gym")&&Object.keys(sums).some(function(x){return sums[x].slots.some(function(s){return /^(pull|push|legs)-|^x:/.test(s)})})};
-    if(hasType(d,"gym")||Object.keys(d.events).length){var t=sessionTiming(d);ssum.days[r.id]={session:d.session||null,startedAt:t.start?new Date(t.start).toISOString():null,endedAt:t.end?new Date(t.end).toISOString():null,totalS:Math.round(t.totalS),workS:Math.round(t.workS),restS:Math.round(t.restS),transitionS:Math.round(t.transitionS),stretchS:Math.round(t.stretchS),untimedS:Math.round(t.untimedS),exerciseCount:Object.keys(sums).length,timed:t.timed}}
+    if(hasType(d,"gym")||Object.keys(d.events).length){ssum.days[r.id]=sessionRecord(d,Object.keys(sums).length)}
   });
   var writes=Object.keys(hist).map(function(x){return ["history/"+x,hist[x]]});
   writes.push(["daySummary/all",dsum],["sessionHistory/all",ssum]);
@@ -1028,11 +1084,13 @@ function gymWarnings(date,session){
     else w.push({lvl:"info",text:"Legs rule: not the day after a 40+ min walk or a poor night. Swap if last night was poor.",swap:nextUpper(session),soft:true});}
   return w;
 }
-function finishWorkout(){
-  var d=D(),now=Date.now(),patch={};
+/* Ends the running session of that ctx (default: whichever is running). Only a gym session moves the rotation on. */
+function finishWorkout(ctx){
+  var d=D(),now=Date.now(),patch={},ws=workoutState(d);
+  ctx=ctx||(ws.current&&ws.current.ctx)||"gym";
   var act=activeTimer(d);if(act)mergeInto(patch,stopPatch(d,act,now));
-  mergeInto(patch,addEvent({t:now,type:"workout-end"}));
-  if(hasType(d,"gym")&&d.session&&!d.sessionCompleted){
+  mergeInto(patch,addEvent({t:now,type:"workout-end",ctx:ctx}));
+  if(ctx==="gym"&&hasType(d,"gym")&&d.session&&!d.sessionCompleted){
     var st=S.state||{},rot=S.programme.rotation,ri=Number.isInteger(st.rotationIndex)?st.rotationIndex:0,owed=st.owedSession||null,X=d.session,sp={};
     var due=rot[((ri%6)+6)%6];
     if(owed&&X===owed){sp.owedSession=null;if(due===X)sp.rotationIndex=(ri+1)%6}
@@ -1042,7 +1100,7 @@ function finishWorkout(){
     enqueue("state/current",sp);applyLocally("state/current",sp);
     patch.sessionCompleted=true;
   }
-  patchDay(patch);releaseWake();flushDerived();
+  patchDay(patch);if(!workoutState(D()).running)releaseWake();flushDerived();
 }
 
 /* ================= SUGGESTIONS ================= */
@@ -1306,9 +1364,7 @@ function setRow(def,d,side,n,sugg,single){
     }
     row.append(nf);
   });
-  function ab(cls,txt,label,fn){return h("button",{type:"button",class:"abtn "+cls,"aria-label":label,onClick:fn},txt)}
-  if(isLive)row.append(ab("stp","■","Stop timer for set "+n,function(){stopTimer();render()}));
-  else if(!single)row.append(ab("go","▶","Start timer for set "+n,function(){startTimer(def,side,n);render()}));
+  if(isLive)row.append(h("span",{class:"chip acc"},"Timing"));
   var tk=h("button",{type:"button",class:"tick stick","data-s":complete?"done":"none","aria-pressed":String(complete),"aria-label":(complete?"Untick set ":"Tick set ")+n,onClick:function(){toggleSet(def,side,n,ph);render()}});
   if(complete)tk.innerHTML=ICON.check;
   row.append(tk);
@@ -1625,9 +1681,9 @@ function wireHeader(){
 function focusedInput(){var a=document.activeElement;return a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT")}
 function renderSoon(){if(renderPending)return;renderPending=true;requestAnimationFrame(function(){renderPending=false;render()})}
 function softRender(){
-  if(focusedInput()){S.needsRender=true;refreshLive();updateWbar();return}
+  if(focusedInput()){S.needsRender=true;refreshLive();updateDock();return}
   var key=JSON.stringify(D())+"|"+JSON.stringify(S.state||{});
-  if(key===S.lastDayKey&&(S.tab==="today"||S.tab==="workout")){updateWbar();return}
+  if(key===S.lastDayKey&&(S.tab==="today"||S.tab==="workout")){updateDock();return}
   renderSoon();
 }
 function render(){
@@ -1635,7 +1691,7 @@ function render(){
   var vkey=S.tab+"|"+(S.sub||"")+"|"+S.date,y=window.scrollY;
   S.lastDayKey=JSON.stringify(D())+"|"+JSON.stringify(S.state||{});
   var v=$("#view");
-  renderTabs();updatePill();updateWbar();
+  renderTabs();updatePill();updateDock(true);
   if(!S.programme&&S.offline&&S.tab==="send"){setBar("Offline app","Send");renderHeader();v.replaceChildren.apply(v,viewSend());return}
   if(!S.programme&&S.offline&&(S.progMissing||S.progTimedOut)){setBar("Offline app","Set up");renderHeader();
     v.replaceChildren(h("section",{class:"card msg stack tight"},h("h2",{},"Load your programme"),h("p",{},"With a connection, open the tracker: Library › Offline app › Copy update. Then come back here: Send › paste › Load update."),h("button",{type:"button",class:"btn primary",onClick:function(){go("send")}},"Go to Send")));return}
@@ -1702,7 +1758,7 @@ function updateTabDot(){
 }
 
 /* ================= WORKOUT / TIMER BAR ================= */
-var TIMER={beeped:false,audio:null,wake:null,tick:null};
+var TIMER={beepedFor:null,restBeepedFor:null,audio:null,wake:null};
 function ensureAudio(){try{if(!TIMER.audio){var C=window.AudioContext||window.webkitAudioContext;if(C)TIMER.audio=new C()}if(TIMER.audio&&TIMER.audio.state==="suspended")TIMER.audio.resume()}catch(e){}}
 var ALARM_DEFAULT={sound:true,soundSec:3,vibrate:true,vibrateSec:2};
 function alarmCfg(){return Object.assign({},ALARM_DEFAULT,lsGet("bp-alarm")||{})}
@@ -1723,34 +1779,352 @@ function restTarget(def){ // seconds: programme value if present, else 90 s load
   var t=def&&def.target&&def.target.restS;if(t)return t;
   return def&&def.loaded?90:45;
 }
-function updateWbar(){
-  var bar=$("#wbar");if(!bar||!P)return;updateTabDot();
-  var d=D(),ws=workoutState(d),act=activeTimer(d),now=Date.now(),kids=[];
-  if(S.date!==todayStr()){bar.hidden=true;return}
-  if(ws.running)kids.push(h("span",{class:"wchip"},"Workout "+fmtDur((now-ws.start)/1000)));
-  if(act){
-    var def=anyDef(act.slot,d);def=def&&effDef(def,d);var el=(now-act.t)/1000;var tgt=def&&def.target&&(def.target.holdS||def.target.holdMin);
-    var label=(def?def.name:"Set")+(act.side?" "+act.side:"")+" · set "+act.setNo;
-    var ht=def&&def.measure==="hold"&&def.exerciseId&&S.state&&S.state.holdTargets&&S.state.holdTargets[def.exerciseId];
-    if(def&&def.measure==="hold"){tgt=ht||(def.target&&(def.target.holdS||def.target.holdMin))||0}
-    if(def&&def.measure==="hold"&&tgt){var rem=tgt-el;if(rem<=0&&!TIMER.beeped){TIMER.beeped=true;beep()}
-      var stopAt=ht||(def.target&&(def.target.holdS||def.target.holdMax))||tgt;
-      if(el>=stopAt&&!TIMER.autoStopping){ // stop exactly at the target, even if the app was in the background
-        TIMER.autoStopping=true;
-        try{patchDay(stopPatch(d,act,act.t+stopAt*1000))}finally{TIMER.autoStopping=false}
-        if(!workoutState(D()).running)setTimeout(releaseWake,(alarmCfg().soundSec||0)*1000+500);
-        TIMER.lastAutoStop=Date.now();setTimeout(render,0);return;
-      }
-      kids.push(h("span",{class:"wchip "+(rem<=0?"over":"timer")},label+" · "+(rem>0?fmtDur(rem)+" left":"+"+fmtDur(-rem))));}
-    else kids.push(h("span",{class:"wchip timer"},label+" · "+fmtDur(el)));
-    kids.push(h("button",{type:"button",class:"ibtn stopb",onClick:function(){stopTimer();render()}},"■ Stop"));
-  }else{var ls=lastStop(d);if(ls&&ws.running){ // rest countdown, only while a workout is running
-    var def2=anyDef(ls.slot,d);def2=def2&&effDef(def2,d);var restT=restTarget(def2),since=(now-ls.t)/1000,left=restT-since;
-    if(left<=0&&TIMER.restBeepedFor!==ls.t){TIMER.restBeepedFor=ls.t;if(since<restT+10)beep()}
-    kids.push(h("span",{class:"wchip "+(left>0?"rest":"over")},left>0?"Rest "+fmtDur(left)+" left":"Rest over +"+fmtDur(-left)))}}
-  if(ws.running)kids.push(h("button",{type:"button",class:"ibtn fin",onClick:function(){openFinish()}},"Finish"));
-  bar.hidden=!kids.length;bar.replaceChildren.apply(bar,kids);
+/* ================= SESSION DOCK (3.10) =================
+   One fixed panel above the tab bar on every tab, while the open day is today and has a day type. One main button
+   (Start / Stop), and a strip of chips that makes any unfinished item current with one tap, in any order.
+   Everything shown is worked out from the saved day (events, entries, dock.current), never from in-memory timers,
+   so a reload or a killed app loses nothing. Only stepper values typed before a Start live in memory. */
+var DOCK={key:null,undo:null,vals:{},prompted:{},reopenCheck:false,lastCur:null,stripX:0};
+function ctxLabel(t){return t==="gym"?"Gym":t==="home"?"Home":t==="office"?"Office":t}
+function fmtClock(sec,hours){sec=Math.max(0,Math.floor(sec));var hh=Math.floor(sec/3600),mm=Math.floor(sec%3600/60),ss=sec%60;return (hours||hh?pad(hh)+":":"")+pad(mm)+":"+pad(ss)}
+function shortName(n){n=String(n||"").split(/[,(]/)[0].trim();return n.length>24?n.slice(0,23)+"…":n}
+/* --- items and units --- */
+function dockLeaves(def,d,out,seen){
+  def=effDef(def,d);if(!def||seen[def.id])return;
+  if(def.measure==="attempts")return; // morning SLS keeps its own card
+  var lk=lockOf(def.id);if(lk&&lk.locked)return;
+  var k=kidsOf(def,d);
+  if(k){k.forEach(function(x){dockLeaves(x,d,out,seen)});return}
+  if(!isMeasured(def))return;
+  seen[def.id]=1;out.push(def);
 }
+/* Sections in day order; each with its blocks of leaf items (containers and two-part slots expanded), then extras. */
+function dockModel(d){
+  var secs=[],byId={},seen={},all=[];
+  if(!d||!d.dayType||!S.programme||!P)return {secs:secs,byId:byId,all:all};
+  var plan=checklistPlan(d);
+  daySections(d).forEach(function(t){
+    var sec={type:t,label:ctxLabel(t),blocks:[],items:[]};
+    plan.filter(function(b){return b.type===t}).forEach(function(b){var it=[];b.items.forEach(function(x){dockLeaves(x,d,it,seen)});if(it.length)sec.blocks.push({name:b.sn[0],items:it})});
+    secs.push(sec)});
+  var ex=Object.keys(d.extras||{}).filter(function(k){return d.extras[k]&&!d.extras[k].deleted}).map(function(k){return extraDef(k,d.extras[k])}).filter(isMeasured);
+  if(ex.length){var host=secs.filter(function(x){return x.type==="gym"})[0]||secs[0];if(host)host.blocks.push({name:"Off-programme",items:ex})}
+  secs.forEach(function(sec){sec.blocks.forEach(function(b){b.items.forEach(function(x){sec.items.push(x);byId[x.id]={def:x,sec:sec.type};all.push(x)})})});
+  return {secs:secs.filter(function(x){return x.items.length}),byId:byId,all:all};
+}
+/* Next unit in order: set 1 R, set 1 L, set 2 R… (sides follow sideOrder). With extra, carries on past the plan. */
+function unitAt(def,d,extra){
+  var sides=sidesOf(def),maxN=0;sides.forEach(function(sd){maxN=Math.max(maxN,plannedSets(def,sd))});
+  for(var n=1;n<=maxN+(extra?20:0);n++)for(var i=0;i<sides.length;i++){var sd=sides[i]||null,pl=plannedSets(def,sd);
+    if(n>pl&&!extra)continue;
+    if(!setIsDone(getEntry(d,def.id,sd,n),def))return {def:def,side:sd,n:n,planned:pl,extra:n>pl}}
+  return null;
+}
+function itemCounts(def,d){var need=0,have=0;sidesOf(def).forEach(function(sd){var n=plannedSets(def,sd);need+=n;have+=Math.min(setsDone(def,d,sd),n)});return {need:need,have:have}}
+function itemSkipped(def,d){return isSkipped(d.items[def.id])}
+function itemFinished(def,d){if(itemSkipped(def,d))return true;var c=itemCounts(def,d);return c.have>=c.need}
+function isExtraOn(id){return !!(S.ui.dockExtra&&S.ui.dockExtra[id])}
+function holdTarget(def){
+  if(!def||def.measure!=="hold")return null;
+  var ht=def.exerciseId&&S.state&&S.state.holdTargets&&S.state.holdTargets[def.exerciseId];
+  return ht||(def.target&&(def.target.holdS||def.target.holdMin))||null;
+}
+/* Values for a unit: suggestion and placeholders, then what is already saved, then what was typed in the dock. */
+function dockVals(def,d,side,n){
+  var ph=placeholderFor(def,side,n,d,n===1?suggestion(def,d):null),e=getEntry(d,def.id,side,n)||{},typed=DOCK.vals[entryId(def.id,side,n)]||{},o={};
+  fieldsOf(def).forEach(function(f){var v=typed[f]!=null?typed[f]:e[f]!=null?e[f]:ph[f];if(v!=null)o[f]=v});
+  return o;
+}
+function dockFields(def){return fieldsOf(def).filter(function(f){return !(f==="holdS"&&def.measure==="hold")&&f!=="minutes"})}
+/* What the dock shows. All derived from the saved day. */
+function dockState(d){
+  var m=dockModel(d),ws=workoutState(d),act=activeTimer(d),runSec=ws.current?ws.current.ctx:null;
+  var cid=(d.dock||{}).current,cur=cid&&m.byId[cid]?m.byId[cid].def:null;
+  if(cur&&itemFinished(cur,d)&&!isExtraOn(cur.id))cur=null;
+  if(act){var ad=m.byId[act.slot];cur=ad?ad.def:(anyDef(act.slot,d)?effDef(anyDef(act.slot,d),d):null)}
+  var order=m.secs.slice();if(runSec)order.sort(function(a,b){return (a.type===runSec?0:1)-(b.type===runSec?0:1)});
+  var suggested=false;
+  if(!cur){for(var i=0;i<order.length&&!cur;i++)cur=order[i].items.filter(function(x){return !itemFinished(x,d)})[0]||null;suggested=!!cur}
+  var curSec=cur&&m.byId[cur.id]?m.byId[cur.id].sec:(runSec||(order[0]&&order[0].type)||null);
+  var stripSec=runSec&&m.secs.some(function(x){return x.type===runSec})?runSec:curSec;
+  var sec=m.secs.filter(function(x){return x.type===stripSec})[0];
+  var strip=sec?sec.items.filter(function(x){return !itemFinished(x,d)}):[];
+  if(cur&&!strip.some(function(x){return x.id===cur.id}))strip=[cur].concat(strip);
+  var unit=null;
+  if(act&&cur){var pl=plannedSets(cur,act.side||null);unit={def:cur,side:act.side||null,n:act.setNo,planned:pl,extra:act.setNo>pl}}
+  else if(cur)unit=unitAt(cur,d,isExtraOn(cur.id));
+  var left=m.all.filter(function(x){return !itemFinished(x,d)});
+  var ls=lastStop(d),lsItem=ls&&m.byId[ls.slot]?m.byId[ls.slot].def:null;
+  var another=(!act&&ws.running&&lsItem&&itemFinished(lsItem,d)&&!itemSkipped(lsItem,d)&&!isExtraOn(lsItem.id))?lsItem:null;
+  var mode;
+  if(act)mode="timing";
+  else if(ws.running)mode=unit?"ready":"empty";
+  else{var doneSecs={};ws.sessions.forEach(function(x){if(x.end)doneSecs[x.ctx]=1});
+    mode=(left.length&&cur&&(!doneSecs[curSec]||S.ui.dockReopen))?"idle":ws.sessions.length?"finished":(left.length?"idle":"none")}
+  return {m:m,ws:ws,act:act,cur:cur,curSec:curSec,unit:unit,strip:strip,stripSec:stripSec,left:left,ls:ls,another:another,mode:mode,suggested:suggested};
+}
+/* --- actions (each is one tap) --- */
+function dockSecOf(def,d){var x=dockModel(d).byId[def.id];return x?x.sec:(D().dayType||"gym")}
+function startSession(ctx,curId){
+  var p=addEvent({t:Date.now(),type:"workout-start",ctx:ctx});if(curId)p.dock={current:curId};
+  DOCK.undo=null;S.ui.dockReopen=false;patchDay(p);ensureAudio();requestWake();updateDock(true);
+}
+function dockStart(u){
+  var d=D(),now=Date.now(),p={events:{}},ws=workoutState(d),undo={events:[],entries:{},dock:(d.dock||{}).current||null};
+  if(!ws.running){var sp=addEvent({t:now-1,type:"workout-start",ctx:dockSecOf(u.def,d)});mergeInto(p,sp);undo.events.push(Object.keys(sp.events)[0])}
+  var ev=addEvent({t:now,type:"start",slot:u.def.id,side:u.side||null,setNo:u.n});mergeInto(p,ev);undo.events.push(Object.keys(ev.events)[0]);
+  p.dock={current:u.def.id};
+  stopAlarm();patchDay(p);DOCK.undo=undo;TIMER.beepedFor=null;ensureAudio();requestWake();updateDock(true);
+}
+function dockStop(durS){
+  var d=D(),act=activeTimer(d);if(!act)return;
+  var def=anyDef(act.slot,d);def=def&&effDef(def,d);
+  var now=durS!=null?act.t+Math.round(durS*1000):Date.now();
+  var id=entryId(act.slot,act.side,act.setNo),prev=d.entries[id]?clone(d.entries[id]):null;
+  var p=stopPatch(d,act,now,def?dockVals(def,d,act.side||null,act.setNo):null);
+  DOCK.undo={events:Object.keys(p.events),entries:{},dock:(d.dock||{}).current||null};DOCK.undo.entries[id]=prev;
+  p.dock={current:act.slot};
+  if(def&&act.setNo>plannedSets(def,act.side||null)&&S.ui.dockExtra)delete S.ui.dockExtra[act.slot];
+  delete DOCK.vals[id];
+  stopAlarm();patchDay(p);updateDock(true);
+}
+function dockDone(u){ // "Done, no timing": ticks the unit with the dock's values
+  var d=D(),def=u.def,id=entryId(def.id,u.side,u.n),prev=d.entries[id]?clone(d.entries[id]):null,vals=dockVals(def,d,u.side,u.n);
+  var e={slot:def.id,exerciseId:def.exerciseId||null,side:u.side||null,setNo:u.n,done:true,editedAt:new Date().toISOString(),deleted:false};
+  if(def.variantKey)e.variant=def.variantKey;
+  if(!prev||prev.deleted)e.loggedAt=new Date().toISOString();
+  fieldsOf(def).forEach(function(f){if(vals[f]!=null)e[f]=vals[f]});
+  var p={entries:{},items:{},dock:{current:def.id}};p.entries[id]=e;p.items[def.id]={skipped:false};
+  if(u.extra&&S.ui.dockExtra)delete S.ui.dockExtra[def.id];
+  delete DOCK.vals[id];
+  patchDay(p);DOCK.undo={events:[],entries:{},dock:(d.dock||{}).current||null};DOCK.undo.entries[id]=prev;updateDock(true);
+}
+/* Undo the last dock tap: null the events it wrote and put the entry back exactly as it was. */
+function dockUndo(){
+  var u=DOCK.undo;if(!u)return;
+  var d=D(),p={events:{},entries:{},dock:{current:u.dock}};
+  u.events.forEach(function(id){p.events[id]=null});
+  Object.keys(u.entries).forEach(function(id){var prev=u.entries[id],cur=d.entries[id]||{},o={};
+    Object.keys(cur).forEach(function(k){o[k]=null});
+    if(prev)Object.keys(prev).forEach(function(k){o[k]=prev[k]});
+    else{o.slot=cur.slot||null;o.exerciseId=cur.exerciseId||null;o.side=cur.side||null;o.setNo=cur.setNo||null;o.deleted=true}
+    o.editedAt=new Date().toISOString();p.entries[id]=o});
+  DOCK.undo=null;stopAlarm();patchDay(p);updateDock(true);if(S.tab!=="today"||!focusedInput())renderSoon();
+}
+function dockPick(def){
+  var d=D();if(activeTimer(d))return;
+  S.ui.dockExtra=S.ui.dockExtra||{};
+  if(itemFinished(def,d)&&!itemSkipped(def,d))S.ui.dockExtra[def.id]=true;else delete S.ui.dockExtra[def.id];
+  var p={dock:{current:def.id}};
+  if(itemSkipped(def,d)){p.items={};p.items[def.id]={skipped:false}}
+  S.ui.dockReopen=true;patchDay(p);updateDock(true);
+}
+function dockAnother(def){S.ui.dockExtra=S.ui.dockExtra||{};S.ui.dockExtra[def.id]=true;patchDay({dock:{current:def.id}});updateDock(true)}
+/* --- forgotten Stop --- */
+function forgotLimit(def){var t=holdTarget(def);return t?3*t:600}
+function medianDur(def){
+  var t=holdTarget(def);if(t)return t;
+  var a=[],hd=def&&def.exerciseId&&S.histories[def.exerciseId]&&S.histories[def.exerciseId].days||{};
+  Object.keys(hd).forEach(function(k){(hd[k].sets||[]).forEach(function(s){if(s.startedAt&&s.endedAt){var x=(Date.parse(s.endedAt)-Date.parse(s.startedAt))/1000;if(x>3&&x<600)a.push(x)}})});
+  var dd=D();for(var id in dd.entries){var e=dd.entries[id];if(e&&!e.deleted&&e.slot===def.id&&e.startedAt&&e.endedAt){var y=(Date.parse(e.endedAt)-Date.parse(e.startedAt))/1000;if(y>3&&y<600)a.push(y)}}
+  if(!a.length)return def&&def.measure==="minutes"?((def.target&&def.target.repsMin)||20)*60:60;
+  a.sort(function(x,y){return x-y});return Math.round(a[Math.floor(a.length/2)]);
+}
+function dockStopTap(){
+  var d=D(),act=activeTimer(d);if(!act)return;
+  var def=anyDef(act.slot,d);def=def&&effDef(def,d);
+  var el=(Date.now()-act.t)/1000;
+  if(def&&el>forgotLimit(def)){openForgotPrompt(act,def,false);return}
+  dockStop();
+}
+function openForgotPrompt(act,def,reopen){
+  DOCK.prompted[act.t]=true;
+  var el=(Date.now()-act.t)/1000,alt=medianDur(def),hold=def.measure==="hold",sh=null;
+  var why=holdTarget(def)?"target":"your usual";
+  sh=sheet("Forgot to stop?",[
+    h("p",{class:"info"},shortName(def.name)+(act.side?" "+act.side:"")+", set "+act.setNo+": "+(hold?"this hold":"this")+" has been running "+fmtDur(el)+"."),
+    h("div",{class:"stack tight"},
+      h("button",{type:"button",class:"btn primary wide",onClick:function(){closeSheet(sh);dockStop(alt)}},"Set it to "+fmtDur(alt)+" ("+why+")"),
+      h("button",{type:"button",class:"btn wide",onClick:function(){closeSheet(sh);dockStop()}},"Keep "+fmtDur((Date.now()-act.t)/1000)),
+      reopen?h("button",{type:"button",class:"btn ghost wide",onClick:function(){closeSheet(sh)}},"Still going"):null)]);
+}
+/* --- edit the last unit --- */
+function lastUnit(d){
+  var ls=lastStop(d);if(!ls)return null;
+  var id=entryId(ls.slot,ls.side,ls.setNo),e=d.entries[id];if(!e||e.deleted)return null;
+  var def=anyDef(ls.slot,d);if(!def)return null;def=effDef(def,d);
+  var dur=e.startedAt&&e.endedAt?Math.round((Date.parse(e.endedAt)-Date.parse(e.startedAt))/1000):null;
+  return {ev:ls,id:id,e:e,def:def,dur:dur};
+}
+function openDockEdit(){
+  var d=D(),lu=lastUnit(d);if(!lu)return;
+  var def=lu.def,e=lu.e,hold=def.measure==="hold",vals={},sh=null,kids=[];
+  fieldsOf(def).forEach(function(f){vals[f]=e[f]==null?null:e[f]});vals.dur=lu.dur;
+  if(hold)kids.push(field("Hold, seconds (also its length)",stepper("de-holdS","Hold seconds",lu.dur,null,1,function(v){vals.dur=v},"numeric")));
+  else{
+    fieldsOf(def).forEach(function(f){kids.push(field(FIELD_LABEL[f],stepper("de-"+f,FIELD_LABEL[f],vals[f],null,stepOf(f,def),function(v){vals[f]=v},f==="kg"?"decimal":"numeric")))});
+    if(lu.dur!=null)kids.push(field("Length, seconds",stepper("de-dur","Length seconds",lu.dur,null,5,function(v){vals.dur=v},"numeric")));
+  }
+  kids.push(h("button",{type:"button",class:"btn primary wide",onClick:function(){
+    var dd=D(),p={entries:{}},o={editedAt:new Date().toISOString()};
+    if(!hold)fieldsOf(def).forEach(function(f){o[f]=vals[f]});
+    if(vals.dur!=null&&e.startedAt){var st=Date.parse(e.startedAt),en=st+Math.max(0,vals.dur)*1000;o.endedAt=new Date(en).toISOString();if(hold)o.holdS=Math.max(0,Math.round(vals.dur));
+      var ev=dd.events[lu.ev.id];if(ev){p.events={};p.events[lu.ev.id]=Object.assign({},ev,{t:en})}}
+    else if(hold&&vals.dur!=null)o.holdS=vals.dur;
+    p.entries[lu.id]=o;DOCK.undo=null;patchDay(p);closeSheet(sh);render()}},"Save"));
+  sh=sheet("Edit "+shortName(def.name)+(lu.ev.side?" "+lu.ev.side:"")+" · set "+lu.ev.setNo,[h("div",{class:"stack tight"},kids)]);
+}
+/* --- All ▸ sheet --- */
+function itemStatusChip(def,d){
+  if(itemSkipped(def,d))return chip("neutral","Skipped");
+  var c=itemCounts(def,d);if(c.have>=c.need)return chip("ok","Done");if(c.have>0)return chip("ok",c.have+"/"+c.need);return chip("neutral","Not started");
+}
+function openDockAll(){
+  var sh=null,body=h("div",{class:"stack"});
+  function draw(){
+    var d=D(),m=dockModel(d),ws=workoutState(d),act=activeTimer(d),kids=[];
+    if(act)kids.push(h("p",{class:"hint",style:"margin:0"},"Stop the running set to switch items."));
+    m.secs.forEach(function(sec){
+      kids.push(h("h3",{class:"lbl pad"},h("span",{class:"tdot t-"+sec.type,"aria-hidden":"true"}),sec.label));
+      sec.blocks.forEach(function(b){
+        kids.push(h("div",{class:"list"},b.items.map(function(x){var sk=itemSkipped(x,d);
+          return h("div",{class:"row dall-row",dataset:{id:x.id}},
+            h("button",{type:"button",class:"row-text",style:"padding:6px 12px",disabled:act?true:null,onClick:function(){dockPick(x);closeSheet(sh)}},
+              h("span",{class:"row-copy"},h("span",{class:"nm"},x.name,itemStatusChip(x,d)),h("span",{class:"ds",text:b.name}))),
+            h("button",{type:"button",class:"ibtn",style:"margin-right:8px",onClick:function(){var p={items:{}};p.items[x.id]={skipped:!sk};patchDay(p);updateDock(true);draw()}},sk?"Bring back":"Skip today"))})));
+      });
+    });
+    if(ws.running)kids.push(h("button",{type:"button",class:"btn danger wide",onClick:function(){openFinish(ws.current.ctx)}},"Finish session"));
+    body.replaceChildren.apply(body,kids);
+  }
+  sh=sheet("All items",[body]);draw();
+}
+/* --- drawing --- */
+function dockShown(){var d=D();return !!(P&&S.programme&&S.date===todayStr()&&d.dayType)}
+function unitLabel(u){
+  var def=u.def,bits=[String(def.name||"").split(",")[0].trim()];
+  bits.push(u.extra?"set "+u.n+" (extra)":"set "+u.n+" of "+u.planned);
+  if(u.side)bits.push(u.side);
+  return bits.join(" · ");
+}
+function startWord(def){return isStretch(def)?"Start stretch":def.measure==="hold"?"Start hold":def.measure==="minutes"?"Start timing":"Start set"}
+function sessionWord(ctx){return ctx==="gym"?"Start gym session":ctx==="office"?"Start office block":"Start home block"}
+function finishWord(ctx){return ctx==="gym"?"Finish and leave gym":"Finish block"}
+function dockMain(label,cls,fn){return h("button",{type:"button",class:"dock-main"+(cls?" "+cls:""),onClick:fn},label)}
+function dockEl(st,d){
+  var collapsed=!!lsGet("bp-dock-collapsed"),u=st.unit,kids=[];
+  var chev=h("button",{type:"button",class:"dock-chev","aria-expanded":String(!collapsed),"aria-label":collapsed?"Expand session dock":"Collapse session dock",
+    onClick:function(){lsSet("bp-dock-collapsed",!collapsed);updateDock(true)},html:ICON.chev});
+  var main;
+  if(st.mode==="timing")main=dockMain("Stop","stop",dockStopTap);
+  else if(st.mode==="ready")main=dockMain(startWord(u.def),null,function(){dockStart(u)});
+  else if(st.mode==="empty")main=dockMain(finishWord(st.ws.current.ctx),"fin",function(){openFinish(st.ws.current.ctx)});
+  else if(st.mode==="idle")main=dockMain(sessionWord(st.curSec),null,function(){startSession(st.curSec,st.cur&&st.cur.id)});
+  var sessClock=st.ws.current?h("span",{dataset:{k:"sess"}},"Session "+fmtClock((Date.now()-st.ws.current.start)/1000,true)):null;
+  if(st.mode==="finished"){
+    var tot={};st.ws.sessions.forEach(function(x){if(x.end)tot[x.ctx]=(tot[x.ctx]||0)+(x.end-x.start)/1000});
+    var line=Object.keys(tot).map(function(k){return ctxLabel(k)+" "+fmtDur(tot[k])}).join(" · ");
+    return h("div",{class:"dock-in"},h("div",{class:"dock-row"},
+      h("span",{class:"dock-fin"},"Finished · "+line),
+      S.offline?null:h("button",{type:"button",class:"textbtn",onClick:function(){go("progress","tl:"+S.date)}},"Timeline"),
+      st.left.length?h("button",{type:"button",class:"textbtn",onClick:function(){S.ui.dockReopen=true;updateDock(true)}},"Start again"):null));
+  }
+  if(collapsed){
+    var clk=st.mode==="timing"?h("span",{class:"dock-cclock",dataset:{k:"unit",t:String(st.act.t),target:String(holdTarget(u.def)||"")}},fmtClock((Date.now()-st.act.t)/1000)):
+      st.ws.current?h("span",{class:"dock-cclock",dataset:{k:"sesss"}},fmtClock((Date.now()-st.ws.current.start)/1000,true)):null;
+    var nm=st.mode==="empty"?"Everything done":u?unitLabel(u):st.cur?shortName(st.cur.name):"";
+    return h("div",{class:"dock-in"},h("div",{class:"dock-row"},chev,clk,h("span",{class:"dock-cname"},nm),main?(main.classList.add("small"),main):null));
+  }
+  // top line
+  var restBit=null;
+  if(st.mode==="ready"&&st.ls){var rdef=anyDef(st.ls.slot,d);rdef=rdef&&effDef(rdef,d);restBit=h("span",{dataset:{k:"rest",t:String(st.ls.t),target:String(restTarget(rdef))}},"")}
+  kids.push(h("div",{class:"dock-top"},chev,sessClock||h("span",{},st.mode==="idle"?"Not started":""),h("span",{class:"dock-sp"}),restBit));
+  if(st.mode==="idle"){
+    kids.push(h("div",{class:"dock-unit"},"Next: "+(st.cur?st.cur.name:"")));
+    kids.push(main);
+    kids.push(h("div",{class:"dock-links"},h("span"),h("button",{type:"button",class:"textbtn",onClick:openDockAll},"All ▸")));
+    return h("div",{class:"dock-in"},kids);
+  }
+  if(st.mode==="empty"){
+    var anyLeft=st.left.length;
+    kids.push(h("div",{class:"dock-unit"},anyLeft?ctxLabel(st.ws.current.ctx)+" items done":"Everything done"));
+  }else{
+    kids.push(h("div",{class:"dock-unit"},unitLabel(u)));
+    if(st.mode==="timing"){var tg=holdTarget(u.def);
+      kids.push(h("div",{class:"dock-clockrow"},h("span",{class:"dock-big",dataset:{k:"unit",t:String(st.act.t),target:tg?String(tg):""}},fmtClock((Date.now()-st.act.t)/1000)),tg?h("span",{class:"muted"},"target "+tg+" s"):null));
+    }
+    var fl=dockFields(u.def);
+    if(fl.length){var vals=dockVals(u.def,d,u.side,u.n),key=entryId(u.def.id,u.side,u.n);
+      kids.push(h("div",{class:"dock-steps",style:"grid-template-columns:repeat("+fl.length+",minmax(0,1fr))"},fl.map(function(f){
+        return h("div",{class:"dock-step"},h("span",{class:"fl"},FIELD_LABEL[f]),stepper("dk-"+f,FIELD_LABEL[f],vals[f]==null?null:vals[f],null,stepOf(f,u.def),function(v){var o=DOCK.vals[key]=DOCK.vals[key]||{};if(v==null)delete o[f];else o[f]=v},f==="kg"?"decimal":"numeric"))})));
+    }
+  }
+  kids.push(main);
+  // Last / Undo / Done-no-timing / another set
+  var lu=st.mode!=="timing"?lastUnit(d):null,links=h("div",{class:"dock-links"});
+  var left=h("span",{class:"dock-last"});
+  if(lu&&st.ws.running)left.append(h("span",{class:"dock-lt"},"Last: "+shortName(lu.def.name)+(lu.ev.side?" "+lu.ev.side:"")+" set "+lu.ev.setNo+(lu.dur!=null?" · "+fmtDur(lu.dur):"")),h("button",{type:"button",class:"textbtn","aria-label":"Edit last set",onClick:openDockEdit},"Edit"));
+  links.append(left);
+  var right=h("span",{class:"dock-lr"});
+  if(st.mode==="ready")right.append(h("button",{type:"button",class:"textbtn",onClick:function(){dockDone(u)}},"Done, no timing"));
+  if(DOCK.undo)right.append(h("button",{type:"button",class:"textbtn",onClick:dockUndo},"Undo"));
+  links.append(right);
+  kids.push(links);
+  if(st.another)kids.push(h("button",{type:"button",class:"textbtn dock-another",onClick:function(){dockAnother(st.another)}},"+ another set: "+shortName(st.another.name)));
+  // picker strip
+  var strip=h("div",{class:"dock-strip",role:"group","aria-label":"Pick an item","aria-disabled":String(st.mode==="timing")},st.strip.map(function(x){
+    var on=st.cur&&x.id===st.cur.id,c=itemCounts(x,d);
+    return h("button",{type:"button",class:"dchip"+(on?" on":""),dataset:{id:x.id},"aria-pressed":String(!!on),disabled:st.mode==="timing"?true:null,onClick:function(){dockPick(x)}},
+      shortName(x.name)+(c.have>0?" "+c.have+"/"+c.need:""))}));
+  kids.push(h("div",{class:"dock-row"},strip,h("button",{type:"button",class:"textbtn dock-all",onClick:openDockAll},"All ▸")));
+  return h("div",{class:"dock-in"},kids);
+}
+/* Rebuilt only when what it shows changes (and never under the thumb while a stepper is being typed in). */
+function updateDock(force){
+  var el=$("#dock");if(!el)return;updateTabDot();
+  if(!dockShown()){if(!el.hidden){el.hidden=true;el.replaceChildren();DOCK.key=null;sizeDock()}return}
+  var d=D(),st=dockState(d);
+  if(st.mode==="none"){if(!el.hidden){el.hidden=true;el.replaceChildren();DOCK.key=null;sizeDock()}return}
+  var key=JSON.stringify([st.mode,st.cur&&st.cur.id,st.unit&&[st.unit.side,st.unit.n],st.act&&st.act.t,st.ls&&st.ls.t,st.strip.map(function(x){var c=itemCounts(x,d);return x.id+c.have}),
+    st.another&&st.another.id,!!DOCK.undo,lsGet("bp-dock-collapsed"),st.ws.sessions.map(function(x){return x.start+"-"+x.end}),st.left.length,S.ui.dockReopen,S.offline,
+    st.unit&&dockVals(st.unit.def,d,st.unit.side,st.unit.n),(function(){var lu=lastUnit(d);return lu&&[lu.e.endedAt,lu.dur]})()]);
+  if(!force&&key===DOCK.key)return dockClocks();
+  if(!force&&el.contains(document.activeElement)&&document.activeElement.tagName==="INPUT")return dockClocks();
+  DOCK.key=key;
+  var old=el.querySelector(".dock-strip");if(old)DOCK.stripX=old.scrollLeft;
+  el.hidden=false;el.className="dock"+(st.mode==="timing"?" timing":"");el.replaceChildren(dockEl(st,d));
+  var sp=el.querySelector(".dock-strip");
+  if(sp){sp.scrollLeft=DOCK.stripX;var curId=st.cur&&st.cur.id;if(curId!==DOCK.lastCur){DOCK.lastCur=curId;var on=sp.querySelector(".dchip.on");if(on){var l=on.offsetLeft-sp.offsetLeft,r=l+on.offsetWidth;if(l<sp.scrollLeft||r>sp.scrollLeft+sp.clientWidth)sp.scrollLeft=Math.max(0,l-8)}}}
+  dockClocks();sizeDock();
+}
+/* Every second: clocks, the hold alarm (once, at the target; the clock keeps counting), the rest alarm, and the reopen check. */
+function dockClocks(){
+  var el=$("#dock");if(!el||el.hidden)return;var now=Date.now(),d=null;
+  el.querySelectorAll("[data-k]").forEach(function(x){var k=x.dataset.k;
+    if(k==="sess"||k==="sesss"){d=d||D();var ws=workoutState(d);if(ws.current)x.textContent=(k==="sess"?"Session ":"")+fmtClock((now-ws.current.start)/1000,true)}
+    else if(k==="unit"&&x.dataset.t){var el2=(now-Number(x.dataset.t))/1000,tg=Number(x.dataset.target)||0;x.textContent=fmtClock(el2);x.classList.toggle("reached",!!tg&&el2>=tg)}
+    else if(k==="rest"){var since=(now-Number(x.dataset.t))/1000,rt=Number(x.dataset.target)||0;x.textContent="Rest "+fmtClock(since)+(rt?" / "+fmtClock(rt):"");x.classList.toggle("over",!!rt&&since>=rt)}});
+}
+function dockTick(){
+  if(!P)return;
+  updateTabDot();
+  if(S.date!==todayStr())return;
+  var d=D(),act=activeTimer(d),now=Date.now();
+  if(act){var def=anyDef(act.slot,d);def=def&&effDef(def,d);var tg=holdTarget(def),el=(now-act.t)/1000;
+    if(tg&&el>=tg&&el<tg+5&&TIMER.beepedFor!==act.t){TIMER.beepedFor=act.t;beep()}
+    if(DOCK.reopenCheck&&def&&(S.offline||!S.db||(S.dayLoaded&&S.dayLoaded[S.date]))){DOCK.reopenCheck=false;
+      if(el>forgotLimit(def)&&!DOCK.prompted[act.t]&&!SHEETS.length)openForgotPrompt(act,def,true)}}
+  else{DOCK.reopenCheck=false;var ws=workoutState(d),ls=lastStop(d);
+    if(ls&&ws.running){var def2=anyDef(ls.slot,d);def2=def2&&effDef(def2,d);var rt=restTarget(def2),since=(now-ls.t)/1000;
+      if(since>=rt&&since<rt+10&&TIMER.restBeepedFor!==ls.t){TIMER.restBeepedFor=ls.t;beep()}}}
+  updateDock();
+}
+function sizeDock(){
+  var el=$("#dock"),t=$("#tabs"),r=document.documentElement.style;
+  if(t)r.setProperty("--tabs-h",t.offsetHeight+"px");
+  r.setProperty("--dock-h",(el&&!el.hidden?el.offsetHeight:0)+"px");
+}
+function wireDockSizes(){try{if(window.ResizeObserver){var ro=new ResizeObserver(sizeDock);var a=$("#dock"),b=$("#tabs");if(a)ro.observe(a);if(b)ro.observe(b)}}catch(e){}sizeDock()}
 
 /* ================= TODAY ================= */
 function openDate(date){flushDerived();S.date=date;S.ui.setupOpen=false;S.ui.eveningOpen=false;S.ui.howOpen={};S.ui.sideDone={};S.ui.open={};S.ui.useKg={};S.rollover=null;subscribeDay(date);lastRenderKey=null;render()}
@@ -2079,11 +2453,7 @@ function viewWorkout(){
   parts.push(head);
   if(!d.session)return parts;
   var s=S.programme.gymSessions[d.session];
-  if(!ws.start)parts.push(h("div",{class:"stack tight"},
-    h("button",{type:"button",class:"btn primary wide",onClick:function(){patchDay(addEvent({t:Date.now(),type:"workout-start"}));ensureAudio();requestWake();render()}},"Start workout"),
-    h("p",{class:"hint",style:"font-size:13px;margin:0"},"Optional. Timestamps are kept either way.")));
-  else if(ws.end)parts.push(h("section",{class:"card row-flex"},h("div",{class:"muted small"},"Finished "+fmtTime(ws.end)+" · "+fmtDur((ws.end-ws.start)/1000)),
-    h("button",{type:"button",class:"btn",onClick:function(){patchDay(addEvent({t:Date.now(),type:"workout-start"}));ensureAudio();requestWake();render()}},"Restart clock")));
+  if(ws.start&&ws.end)parts.push(h("section",{class:"card"},h("div",{class:"muted small"},"Finished "+fmtTime(ws.end)+" · "+fmtDur((ws.end-ws.start)/1000))));
   if(s.headerNote)parts.push(h("div",{class:"banner info",text:s.headerNote}));
   if(s.tabIntro)parts.push(h("p",{class:"hint",text:s.tabIntro}));
   var openId=S.ui.openEx;
@@ -2097,7 +2467,7 @@ function viewWorkout(){
   var mine=notes.filter(function(n){return n.tab===tab});
   if(mine.length)parts.push(h("section",{class:"card"},disclosure("Session notes",S.ui.notesOpen,function(){S.ui.notesOpen=!S.ui.notesOpen;render()},
     mine.map(function(n){return h("p",{class:"info small",text:n.note})}))));
-  if(!d.sessionCompleted)parts.push(h("button",{type:"button",class:"btn wide",onClick:openFinish},"Finish session"));
+  if(!d.sessionCompleted)parts.push(h("button",{type:"button",class:"btn wide",onClick:function(){openFinish("gym")}},"Finish session"));
   else parts.push(h("p",{class:"info small"},"Session finished."));
   return parts;
 }
@@ -2124,12 +2494,16 @@ function exerciseCard(def,d,open,nextDef){
   }
   return card;
 }
-function openFinish(){
-  var sh=null,n=pendingCount();
-  sh=sheet("Finish workout",[
-    n?h("div",{class:"banner"},n+" change"+(n===1?"":"s")+" not saved yet. ",h("button",{type:"button",class:"ibtn",onClick:function(){kick();closeSheet(sh);setTimeout(openFinish,1500)}},"Sync now")):h("div",{class:"banner info"},"Everything is saved."),
-    h("p",{class:"hint"},"Finishing stops the clock, moves the rotation on to the next session and records anything you didn't touch as skipped."),
-    h("div",{class:"btns"},h("button",{type:"button",class:"btn primary",onClick:function(){sessionExercises(D()).forEach(function(x){if(!shownStatus(x,D())&&!(D().items[x.id]||{}).note)setManualStatus(x,"skipped")});finishWorkout();closeSheet(sh);render()}},"Finish"),h("button",{type:"button",class:"btn",onClick:function(){closeSheet(sh)}},"Keep going"))]);
+function openFinish(ctx){
+  var ws=workoutState(D());ctx=ctx||(ws.current&&ws.current.ctx)||"gym";
+  var sh=null,n=pendingCount(),gym=ctx==="gym";
+  sh=sheet(gym?"Finish gym session":"Finish "+ctxLabel(ctx).toLowerCase()+" block",[
+    n?h("div",{class:"banner"},n+" change"+(n===1?"":"s")+" not saved yet. ",h("button",{type:"button",class:"ibtn",onClick:function(){kick();closeSheet(sh);setTimeout(function(){openFinish(ctx)},1500)}},"Sync now")):h("div",{class:"banner info"},"Everything is saved."),
+    h("p",{class:"hint"},gym?"Finishing stops the clock, moves the rotation on to the next session and records any gym exercise you didn't touch as skipped.":"Finishing stops the clock. Anything not done stays unticked."),
+    h("div",{class:"btns"},h("button",{type:"button",class:"btn primary",onClick:function(){
+      if(gym)sessionExercises(D()).forEach(function(x){if(!shownStatus(x,D())&&!(D().items[x.id]||{}).note)setManualStatus(x,"skipped")});
+      finishWorkout(ctx);DOCK.undo=null;S.ui.dockReopen=false;SHEETS.slice().forEach(function(x){closeSheet(x)});render()}},"Finish"),
+      h("button",{type:"button",class:"btn",onClick:function(){closeSheet(sh)}},"Keep going"))]);
 }
 
 /* ================= ANALYTICS DATA ================= */
@@ -2310,7 +2684,13 @@ function timeSection(from){
       {label:"Between exercises",data:ds.map(function(k){return m(k,"transitionS")}),backgroundColor:cssVar("--warn")},
       {label:"Untimed",data:ds.map(function(k){return m(k,"untimedS")}),backgroundColor:cssVar("--line")}]},
       {scales:{x:{stacked:true,ticks:{color:cssVar("--ink2"),maxTicksLimit:5,maxRotation:0}},y:{stacked:true,ticks:{color:cssVar("--ink2")},title:{display:true,text:"minutes",color:cssVar("--ink2")}}}})));
-  }else card.append(h("p",{class:"hint"},"No timed workouts in this range yet. Use Start workout and the ▶ buttons on sets to record timings."));
+  }else card.append(h("p",{class:"hint"},"No timed gym sessions in this range yet. Use the dock's Start and Stop to record timings."));
+  // home and office blocks (3.10): separate from the gym series above
+  var hb={};datesIn(sh,from).forEach(function(k){var ss=sh[k].sessions||{};Object.keys(ss).forEach(function(x){var r=ss[x];if(!r||r.ctx==="gym")return;var a=hb[r.ctx]=hb[r.ctx]||{n:0,tot:0,work:0,stretch:0};a.n++;a.tot+=r.totalS||0;a.work+=r.workS||0;a.stretch+=r.stretchS||0})});
+  var hk=Object.keys(hb);
+  if(hk.length){var tbh=h("table",{},h("thead",{},h("tr",{},h("th",{},"Block"),h("th",{class:"num-c"},"Times"),h("th",{class:"num-c"},"Avg total"),h("th",{class:"num-c"},"Avg work"),h("th",{class:"num-c"},"Avg stretch"))),h("tbody"));
+    hk.sort().forEach(function(c){var a=hb[c];tbh.lastChild.append(h("tr",{},h("td",{},ctxLabel(c)),h("td",{class:"num-c"},String(a.n)),h("td",{class:"num-c"},fmtMin(a.tot/a.n)),h("td",{class:"num-c"},fmtMin(a.work/a.n)),h("td",{class:"num-c"},fmtMin(a.stretch/a.n))))});
+    card.append(h("h3",{class:"lbl pad",style:"margin-top:6px"},"Home and office blocks"),h("div",{class:"tbl-wrap"},tbh))}
   // rest per exercise
   var rests={};Object.keys(S.histories).forEach(function(id){var hd=S.histories[id].days||{};datesIn(hd,from).forEach(function(k){var ss=(hd[k].sets||[]).filter(function(s){return s.startedAt&&s.endedAt}).sort(function(a,b){return Date.parse(a.startedAt)-Date.parse(b.startedAt)});
     for(var i=1;i<ss.length;i++){var g=(Date.parse(ss[i].startedAt)-Date.parse(ss[i-1].endedAt))/1000;if(g>0&&g<900){(rests[id]=rests[id]||[]).push(g)}}})});
@@ -2323,7 +2703,7 @@ function timeSection(from){
   var wks=Object.keys(wk).sort();if(wks.length){card.append(h("h3",{class:"lbl pad",style:"margin-top:6px"},"Stretching per week"));
     card.append(chartBox(chartBase("bar",{labels:wks.map(fmtShort),datasets:[{label:"Minutes holding stretches",data:wks.map(function(w){return round1(wk[w]/60)}),backgroundColor:cssVar("--c-stretch")}]},{scales:{x:{ticks:{color:cssVar("--ink2"),maxRotation:0}},y:{min:0,ticks:{color:cssVar("--ink2")}}}}),true))}
   // session timeline picker
-  var tl=Object.keys(sh).filter(function(k){return sh[k].totalS>0||sh[k].exerciseCount>0}).sort().reverse().slice(0,20);
+  var tl=Object.keys(sh).filter(function(k){return sh[k].totalS>0||sh[k].exerciseCount>0||(sh[k].sessions&&Object.keys(sh[k].sessions).length)}).sort().reverse().slice(0,20);
   if(tl.length){card.append(h("h3",{class:"lbl pad",style:"margin-top:6px"},"Session timeline"),h("div",{class:"sess-chips"},tl.map(function(k){return h("button",{type:"button",class:"sess-chip",onClick:function(){go("progress","tl:"+k)}},fmtShort(k)+(sh[k].session?" · "+sh[k].session:""))})))}
   return card;
 }
@@ -2408,24 +2788,36 @@ function viewTimeline(date){
   var parts=[];
   var raw=date===S.date?D():(S.recent[date]?normDay(S.recent[date],date):null);
   if(!raw){parts.push(h("p",{class:"hint"},"Loading that day…"));Promise.resolve().then(function(){return dbGet("days/"+date)}).then(function(x){if(x){S.recent[date]=x;render()}else{parts.push(h("p",{class:"hint"},"No log for that day."))}},function(){});return parts}
-  var d=raw,t=sessionTiming(d),sh=(S.sessionHistory&&S.sessionHistory.days)||{};
-  var card=h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},fmtDate(date)+(d.session?" · "+d.session:"")));
-  var prev=Object.keys(sh).filter(function(k){return k<date&&sh[k].session===d.session&&sh[k].totalS>0}).sort().pop();
+  var d=raw,ws=workoutState(d),sh=(S.sessionHistory&&S.sessionHistory.days)||{};
+  /* Each session of the day in the order it was done (3.10). Days with no sessions draw as before. */
+  if(ws.sessions.length){
+    ws.sessions.slice().sort(function(a,b){return a.start-b.start}).forEach(function(se){
+      var t=sessionTiming(d,se);
+      parts.push(timelineCard(d,date,t,ctxLabel(se.ctx)+(se.ctx==="gym"&&d.session?" · "+d.session:"")+" · "+fmtTime(se.start)+(se.end?"–"+fmtTime(se.end):" (running)"),se.ctx==="gym"?sh:null));
+    });
+    return parts;
+  }
+  parts.push(timelineCard(d,date,sessionTiming(d),fmtDate(date)+(d.session?" · "+d.session:""),sh));
+  return parts;
+}
+function timelineCard(d,date,t,title,sh){
+  var card=h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},title));
+  var prev=sh?Object.keys(sh).filter(function(k){return k<date&&sh[k].session===d.session&&sh[k].totalS>0}).sort().pop():null;
   function delta(f,v){if(!prev)return "";var dv=Math.round((v-(sh[prev][f]||0))/60);return dv?" ("+(dv>0?"+":"")+dv+" vs "+fmtShort(prev)+")":""}
   var tot=t.totalS||1;
   card.append(h("div",{class:"tl-sum"},[["Total","totalS",t.totalS],["Work","workS",t.workS],["Stretch","stretchS",t.stretchS],["Rest","restS",t.restS],["Between","transitionS",t.transitionS],["Untimed","untimedS",t.untimedS]].map(function(x){
     return h("div",{},h("b",{},fmtMin(x[2])),h("span",{},x[0]+(x[0]!=="Total"?" · "+Math.round(x[2]/tot*100)+"%":"")+delta(x[1],x[2])))})));
   var ivs=t.intervals;
   if(!ivs.length){
-    // approximate from loggedAt
     var pts=[];for(var id in d.entries){var e=d.entries[id];if(e&&!e.deleted&&e.loggedAt&&entryHasValue(e)){var df=anyDef(e.slot,d);pts.push({t:Date.parse(e.loggedAt),name:df?df.name:e.slot,side:e.side,setNo:e.setNo})}}
+    pts=pts.filter(function(p){return !t.start||!t.end||(p.t>=t.start&&p.t<=t.end)});
     pts.sort(function(a,b){return a.t-b.t});
-    if(!pts.length){card.append(h("p",{class:"hint"},"No timings for this day. Next time, tap Start workout and use ▶ on each set."));parts.push(card);return parts}
+    if(!pts.length){card.append(h("p",{class:"hint"},"No timings in this session. Use the dock's Start and Stop for each set."));return card}
     card.append(h("p",{class:"info small"},"Approximate: drawn from when each set was entered, because no timers were used."));
     card.append(timelineSvg(pts.map(function(p){return {s:p.t,e:p.t+20000,name:p.name,side:p.side,setNo:p.setNo,point:true}}),pts[0].t,pts[pts.length-1].t+20000));
   }else card.append(timelineSvg(ivs,t.start||ivs[0].s,t.end||ivs[ivs.length-1].e));
   card.append(h("div",{class:"legend"},h("span",{},h("i",{style:"background:var(--accent)"}),"Set"),h("span",{},h("i",{style:"background:var(--c-stretch)"}),"Stretch"),h("span",{},h("i",{style:"background:var(--c-rest)"}),"Rest (same exercise)"),h("span",{},h("i",{style:"background:var(--c-trans)"}),"Between exercises")));
-  parts.push(card);return parts;
+  return card;
 }
 function timelineSvg(ivs,start,end){
   var pxMin=9,W=340,top=10,left=46,barX=left+6,barW=70,labX=barX+barW+10;
@@ -3003,11 +3395,11 @@ async function boot(){
   setTimeout(function(){if(!S.progConfirmed){if(S.programme)S.progStale=true;else S.progTimedOut=true;render()}},10000);
   window.addEventListener("popstate",onPop);
   window.addEventListener("online",function(){kick()});
-  S.todayAtLoad=todayStr();
-  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){kick();checkRollover();if(workoutState(D()).running||activeTimer(D()))requestWake();if(!focusedInput())render()}else{flushDerived();persistOutbox();saveCache()}});
+  S.todayAtLoad=todayStr();DOCK.reopenCheck=true;wireDockSizes();
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){DOCK.reopenCheck=true;kick();checkRollover();if(workoutState(D()).running||activeTimer(D()))requestWake();if(!focusedInput())render()}else{flushDerived();persistOutbox();saveCache()}});
   window.addEventListener("pagehide",function(){flushDerived();persistOutbox();saveCache()});
   document.addEventListener("focusout",function(){setTimeout(function(){if(S.needsRender&&!focusedInput())render()},120)});
-  var tickN=0;setInterval(function(){updateWbar();++tickN;if(tickN%15===0)checkRollover();if(S.tab==="library"&&S.sub==="sync"&&(tickN%5===0))softRenderSync()},1000);
+  var tickN=0;setInterval(function(){dockTick();++tickN;if(tickN%15===0)checkRollover();if(S.tab==="library"&&S.sub==="sync"&&(tickN%5===0))softRenderSync()},1000);
   setInterval(saveCache,30000);
   S.wasToday=true;
   var db=null,user=null,sample=null,dl=null;
@@ -3036,6 +3428,8 @@ async function boot(){
 function softRenderSync(){if(!focusedInput())render()}
 function saveCache(){lsSet("bp-cache-v2",{programme:S.programme,state:S.state,roadmap:S.roadmap,custom:S.custom,remote:(function(){var o={};o[S.date]=S.remote[S.date];return o})()})}
 window.__goSync=function(){if(S.offline)go('send');else go('library','sync')};
+/* Read-only hook for tests/smoke.js. */
+window.__BP_TEST={timing:function(){return sessionTiming(D())},dock:function(){var st=dockState(D());return {mode:st.mode,cur:st.cur&&st.cur.id,unit:st.unit&&{side:st.unit.side,n:st.unit.n,extra:st.unit.extra},strip:st.strip.map(function(x){return x.id})}}};
 boot();
 
 })();

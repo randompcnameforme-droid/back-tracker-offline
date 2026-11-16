@@ -76,13 +76,11 @@ button{cursor:pointer}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.stop{background:var(--stop-soft);color:var(--stop)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
-.wbar{display:flex;align-items:center;gap:10px;padding:8px 0 10px;flex-wrap:wrap}
-.wbar[hidden]{display:none!important}
 .wchip{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:6px 10px;background:var(--accent-soft);color:var(--accent);font:600 15px/1.2 var(--font-head);font-variant-numeric:tabular-nums}
 .wchip.timer{background:var(--ok-soft);color:var(--ok)}
 .wchip.over{background:var(--warn-soft);color:var(--warn)}
 .wchip.rest{background:var(--surface2);color:var(--ink2)}
-.wrap{max-width:620px;margin:0 auto;padding-block:14px calc(110px + env(safe-area-inset-bottom,0px));display:grid;gap:16px}
+.wrap{max-width:620px;margin:0 auto;padding-block:14px calc(110px + var(--dock-h,0px) + env(safe-area-inset-bottom,0px));display:grid;gap:16px}
 .stack{display:grid;gap:16px;min-width:0}
 .stack.tight{gap:8px}
 .banner{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:500}
@@ -351,6 +349,46 @@ tr:last-child td{border-bottom:0}
 .abtn.undo{cursor:pointer}
 .tick.stick{width:44px;height:44px}
 .tick.stick svg{width:20px;height:20px}
+/* v3.10 session dock: fixed above the tab bar */
+.dock{position:fixed;left:0;right:0;bottom:var(--tabs-h,58px);z-index:9;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.10);
+  padding:6px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px))}
+.dock[hidden]{display:none!important}
+.dock-in{max-width:620px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;min-width:0}
+.dock-row{display:flex;align-items:center;gap:6px;min-width:0}
+.dock-top{display:flex;align-items:center;gap:6px;font:600 14px/1.2 var(--font-head);font-variant-numeric:tabular-nums;color:var(--ink2)}
+.dock-sp{flex:1}
+.dock-top .over{color:var(--warn)}
+.dock-chev{flex:none;width:44px;height:36px;border:0;background:none;display:grid;place-items:center;color:var(--ink2);padding:0;transform:rotate(90deg)}
+.dock-chev[aria-expanded="false"]{transform:rotate(-90deg)}
+.dock-unit{font:600 17px/1.25 var(--font-head);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dock-clockrow{display:flex;align-items:baseline;gap:10px}
+.dock-big{font:700 40px/1 var(--font-head);font-variant-numeric:tabular-nums;color:var(--ink)}
+.dock-big.reached{color:var(--ok)}
+.dock-steps{display:grid;gap:8px}
+.dock-step{display:grid;gap:2px;min-width:0}
+.dock-main{width:100%;height:64px;border:0;border-radius:14px;background:var(--accent);color:var(--accent-ink);font:700 20px/1 var(--font-head)}
+.dock-main.stop{background:var(--stop-solid);color:var(--on-stop)}
+.dock-main.fin{background:var(--ok-solid);color:var(--on-ok)}
+.dock-main.small{width:auto;flex:none;height:48px;padding:0 18px;font-size:17px}
+.dock-links{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:14px;color:var(--ink2);min-height:36px}
+.dock-links .textbtn{min-height:36px;padding:0 6px}
+.dock-last{flex:1;min-width:0;display:flex;align-items:center}
+.dock-lt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dock-last .textbtn{flex:none}
+.dock-lr{flex:none;display:flex}
+.dock-another{justify-self:start;min-height:36px}
+.dock-strip{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 0}
+.dock-strip::-webkit-scrollbar{display:none}
+.dock-strip[aria-disabled="true"]{opacity:.4}
+.dchip{flex:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-weight:600;font-size:14px;white-space:nowrap;color:var(--ink)}
+.dchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dock-all{flex:none;min-height:44px}
+.dock-cclock{flex:none;font:700 18px/1 var(--font-head);font-variant-numeric:tabular-nums}
+.dock-cclock.reached{color:var(--ok)}
+.dock-cname{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock-fin{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:44px;display:flex;align-items:center}
+.dall-row{display:flex;align-items:center}
+.dall-row .row-text{flex:1}
 </style>
 <div class="bar"><div class="bar-in">
   <div class="bar-main" id="barMain"></div>
@@ -358,6 +396,7 @@ tr:last-child td{border-bottom:0}
     <button type="button" class="hbtn flag" id="flagBtn" aria-label="Red flags"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.8l9 15.7H3z"/><path d="M12 10v4.2"/><path d="M12 17.2h.01"/></svg></button>
     <button type="button" class="savebtn" id="saveBtn"><span class="pill" id="save" aria-live="polite"><span class="dot"></span><span id="saveTxt">Saved</span></span></button>
   </div>
-</div><div class="barchip" id="barChip" hidden></div><div class="wbar" id="wbar" hidden></div></div>
+</div><div class="barchip" id="barChip" hidden></div></div>
 <main class="wrap"><div id="view" class="stack"></div></main>
+<div class="dock" id="dock" hidden role="region" aria-label="Session dock"></div>
 <nav class="tabs" id="tabs" aria-label="Sections"></nav>
