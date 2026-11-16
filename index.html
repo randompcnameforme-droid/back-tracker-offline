@@ -389,6 +389,9 @@ if(window.__OFFLINE){(function(){
   // direct put used when loading an update (no updatedAt bump, so it doesn't count as unsent)
   window.__LOCALDB={store:store,db:db,put:function(path,d){store[path]=cl(d);persist();notify()}};
   window.claude={use:function(n){return Promise.resolve(n==="db"?db:null)}};
+  // Ask Chrome to keep this app's storage when space runs low (installed apps are usually granted this).
+  window.__PERSIST=null;
+  try{if(navigator.storage&&navigator.storage.persist){navigator.storage.persisted().then(function(p){if(p){window.__PERSIST=true;return}return navigator.storage.persist().then(function(g){window.__PERSIST=!!g})}).catch(function(){})}}catch(e){}
 })()}
 
 </script>
@@ -396,7 +399,7 @@ if(window.__OFFLINE){(function(){
 (function(){
 "use strict";
 /* ================= CORE HELPERS ================= */
-var APP_VERSION="3.8.0";
+var APP_VERSION="3.8.2";
 var DAY_TYPES=[["gym","Gym"],["home","Home"],["office","Office"]];
 var ICON={
   check:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
@@ -926,11 +929,13 @@ function stopTimer(){var d=D(),act=activeTimer(d);if(!act)return;patchDay(stopPa
 
 /* ================= DERIVED DOCUMENTS ================= */
 var derivedTimers={},derivedLast={};
-/* Chart summaries are rebuilt after a quiet 20 s, and straight away when the workout is finished, the app is
-   hidden or closed, or Progress/Goals is opened. Only summaries that actually changed are queued. */
-function scheduleDerived(date){clearTimeout(derivedTimers[date]);derivedTimers[date]=setTimeout(function(){derivedTimers[date]=null;writeDerived(date)},20000)}
+/* Chart summaries are rebuilt after 5 quiet minutes, and straight away when the workout is finished, the app is
+   hidden or closed, the day is changed, or Progress/Goals is opened. Only summaries that actually changed are queued,
+   and they are applied on this phone at once so charts never wait for the save. */
+var DERIVED_QUIET_MS=300000;
+function scheduleDerived(date){clearTimeout(derivedTimers[date]);derivedTimers[date]=setTimeout(function(){derivedTimers[date]=null;writeDerived(date)},DERIVED_QUIET_MS)}
 function flushDerived(){Object.keys(derivedTimers).forEach(function(dt){if(derivedTimers[dt]){clearTimeout(derivedTimers[dt]);derivedTimers[dt]=null;writeDerived(dt)}})}
-function enqueueIfChanged(key,path,patch){var s=JSON.stringify(patch);if(derivedLast[key]===s)return;derivedLast[key]=s;enqueue(path,patch)}
+function enqueueIfChanged(key,path,patch){var s=JSON.stringify(patch);if(derivedLast[key]===s)return;derivedLast[key]=s;enqueue(path,patch);applyLocally(path,patch)}
 function summariseExercises(d){ // exerciseId -> summary for this day
   var by={};
   for(var id in d.entries){var e=d.entries[id];if(!e||e.deleted||!entryHasValue(e))continue;
@@ -1695,6 +1700,8 @@ function globalBanners(){
   if(S.dbMissing)add("stop",h("div",{class:"banner stop"},"Saving isn't available in this view. What you enter stays on this phone until the app is opened from its link while signed in."));
   else if(!S.storageOk)add("note",h("div",{class:"banner"},ERR_TEXT.storage));
   if(SYNC.blocked&&SYNC.lastError)add("stop",h("div",{class:"banner stop"},h("b",{},"Not saving. "),errText(SYNC.lastError.code)+" ",h("button",{type:"button",class:"ibtn",onClick:function(){go("library","sync")}},"Details")));
+  if(S.offline){var un=unsentDays().filter(function(k){return k<todayStr()});
+    if(un.length)add("note",h("div",{class:"banner"},h("b",{},un.length+" earlier day"+(un.length===1?"":"s")+" not sent yet. "),"Unsent logs live only on this phone, and clearing Chrome's data would delete them. ",h("button",{type:"button",class:"ibtn go",onClick:function(){go("send")}},"Send")))}
   if(S.rollover&&S.date===S.rollover.from)add("note",h("div",{class:"banner info"},h("b",{},"It's now "+fmtDate(S.rollover.to)+". "),"You're still logging "+fmtDate(S.rollover.from)+". ",h("button",{type:"button",class:"ibtn go",onClick:function(){openDate(S.rollover.to)}},"Switch to today")));
   if(S.progStale)add("note",h("div",{class:"banner"},"Showing the programme saved on this phone. Couldn't confirm it is the latest."));
   if(S.recovered&&S.recovered.length&&S.tab==="today")add("note",recoverBanner());
@@ -1777,7 +1784,7 @@ function updateWbar(){
 }
 
 /* ================= TODAY ================= */
-function openDate(date){S.date=date;S.ui.setupOpen=false;S.ui.eveningOpen=false;S.ui.howOpen={};S.ui.sideDone={};S.ui.open={};S.ui.useKg={};S.rollover=null;subscribeDay(date);lastRenderKey=null;render()}
+function openDate(date){flushDerived();S.date=date;S.ui.setupOpen=false;S.ui.eveningOpen=false;S.ui.howOpen={};S.ui.sideDone={};S.ui.open={};S.ui.useKg={};S.rollover=null;subscribeDay(date);lastRenderKey=null;render()}
 /* New calendar day while the app was left open. Only moves you on if you were looking at the day that just ended,
    never if you are correcting an older day, and never in the middle of typing or a running workout (a banner offers it instead). */
 function checkRollover(){
@@ -2926,6 +2933,9 @@ function loadTrackerUpdate(obj){
 function viewSend(){
   setBar("Offline app","Send to tracker");
   var parts=[],un=unsentDays();
+  var pst=window.__PERSIST;
+  parts.push(h("p",{class:"info small"},pst===true?"This phone has agreed to keep the offline app's data when storage runs low. Clearing Chrome's browsing data would still delete it, so send regularly.":
+    pst===false?"Chrome hasn't agreed to protect this app's data yet; installing it to the home screen usually fixes that. Send regularly.":"Send regularly: logs not yet sent exist only on this phone."));
   var link=h("a",{class:"btn wide",href:TRACKER_URL,target:"_blank",rel:"noopener",style:"display:grid;place-items:center;text-decoration:none"},"Open the tracker");
   parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"Send your log"),
     h("p",{class:"info"},un.length?un.length+" day"+(un.length===1?"":"s")+" not sent yet: "+un.map(fmtShort).join(", "):"Everything has been sent."),

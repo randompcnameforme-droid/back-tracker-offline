@@ -1,7 +1,9 @@
-# Back Tracker Offline
+# Back Programme Tracker
 
-Offline companion to the back-programme tracker. Open https://randompcnameforme-droid.github.io/back-tracker-offline/ in Chrome on the phone and choose **Add to home screen**. It then opens and works with no connection.
+Source for Su's back-rehab tracker (a Claude artifact) and its offline companion (this site).
 
-- Contains code only. The programme and all logs are stored on the phone, never in this repository.
-- Set-up and updates: in the tracker, **Library › Offline app › Copy update**, then here **Send › paste › Load update**.
-- Sending logs: here **Send › Send to tracker** copies the log and opens the tracker on its import screen; tap the box there and choose **Paste**.
+- **Offline app:** https://randompcnameforme-droid.github.io/back-tracker-offline/. Open in Chrome and choose **Install**.
+  Set-up and weekly refresh: tracker **Library › Offline app › Copy update**, then here **Send › paste › Load update**.
+  Sending logs: here **Send › Send to tracker**, then tap the box in the tracker and choose **Paste**.
+- **Building:** `python3 build.py`. **Testing:** `node tests/smoke.js`. See `CLAUDE.md` for the change process.
+- Code only. No programme or log data is stored in this repository.
