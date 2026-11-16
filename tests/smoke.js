@@ -33,6 +33,11 @@ const failures=[];function check(name,ok,extra){console.log((ok?'PASS ':'FAIL ')
   await p.locator('[data-id="home-full-mobility-block"] .row-main .tick').first().click();await p.waitForTimeout(1500);
   const d1=await p.evaluate(t=>window.__MOCK.store['days/'+t],T);
   check('block tick → children ticked',d1&&d1.items['mob-9']&&d1.items['mob-9'].status==='done');
+  check('version notice shown',await p.getByText(/Updated to \d/).count()===1);
+  await p.getByRole('button',{name:'Pain 0',exact:true}).click();await p.waitForTimeout(300);
+  await p.getByRole('button',{name:'More Sleep hours'}).click();await p.getByRole('button',{name:'Side',exact:true}).click();await p.waitForTimeout(1500);
+  const dm=await p.evaluate(t=>window.__MOCK.store['days/'+t],T);
+  check('morning pain and sleep saved',dm&&dm.morning&&dm.morning.pain===0&&dm.morning.sleepH===7.5&&dm.morning.sleepPos==='side'&&dm.loggedWith&&dm.loggedWith.tracker,JSON.stringify(dm&&dm.morning));
   await p.evaluate(()=>{window.__MOCK.hang=true});
   await p.locator('[data-id="home-modified-dead-bug"] .row-main .tick').first().click();await p.waitForTimeout(17000);
   const waiting=await p.textContent('#saveTxt');
@@ -65,6 +70,8 @@ const failures=[];function check(name,ok,extra){console.log((ok?'PASS ':'FAIL ')
   await p.fill('#imp-ta',log);await p.waitForTimeout(1500);
   const d3=await p.evaluate(t=>window.__MOCK.store['days/'+t],T);
   check('offline log imports into the tracker',d3&&d3.importedFromOffline&&d3.items['home-floating-cobra'].status==='done');
+  check('import warns about a day also logged in the tracker',await p.getByText(/also logged here in the tracker/).count()===1);
+  check('import keeps tracker morning data',d3&&d3.morning&&d3.morning.pain===0);
   check('no script errors',!errs.length,errs.join(' | '));
   await b.close();srv.close();
   console.log(failures.length?'\n'+failures.length+' FAILED':'\nALL PASSED');process.exit(failures.length?1:0);

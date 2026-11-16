@@ -399,7 +399,8 @@ if(window.__OFFLINE){(function(){
 (function(){
 "use strict";
 /* ================= CORE HELPERS ================= */
-var APP_VERSION="3.8.2";
+var APP_VERSION="3.9.0";
+var APP_CHANGES="Waking pain and sleep now go in the Morning card under SLS, with charts in Progress › SLS. Importing from the offline app now warns when a day was already logged here.";
 var DAY_TYPES=[["gym","Gym"],["home","Home"],["office","Office"]];
 var ICON={
   check:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
@@ -708,7 +709,7 @@ function normDay(d,date){
   var e=emptyDay(date);if(!d)return e;
   var o=Object.assign(e,clone(d));
   o.sls=normSls(d.sls);
-  ["items","entries","events","extras","variantBySlot","endOfDay","alsoTypes"].forEach(function(k){if(!isObj(o[k]))o[k]={}});
+  ["items","entries","events","extras","variantBySlot","endOfDay","alsoTypes","morning"].forEach(function(k){if(!isObj(o[k]))o[k]={}});
   return o;
 }
 function dayView(date){
@@ -837,7 +838,7 @@ function withStatuses(patch){
   });
   return patch;
 }
-function patchDay(patch){patch=withStatuses(patch);patch.updatedAt=new Date().toISOString();enqueue("days/"+S.date,patch);scheduleDerived(S.date)}
+function patchDay(patch){patch=withStatuses(patch);patch.updatedAt=new Date().toISOString();patch.loggedWith={};patch.loggedWith[S.offline?"offline":"tracker"]=true;enqueue("days/"+S.date,patch);scheduleDerived(S.date)}
 function tickPatch(def,on,d,patch){
   def=effDef(def,d);
   patch.items=patch.items||{};patch.items[def.id]=Object.assign(patch.items[def.id]||{},{tick:on?"on":"off",skipped:false});
@@ -987,7 +988,7 @@ async function writeDerived(date){
   var dex={};ids.forEach(function(x){dex[x]=true});prevIds.forEach(function(x){if(!dex[x])dex[x]=false});
   var c=slsCalc(d),v=slsVals(d),ad=adherence(d);
   var ds={days:{}};ds.days[date]={dayType:d.dayType||null,session:d.session||null,sls:{r:v.r,l:v.l,floor:c.floor,scattered:c.scattered,n:c.n},
-    planned:ad.planned,done:ad.done,mobility:ad.mobility,walkMinutes:walkMinutes(d),gym:hasType(d,"gym")&&ids.some(function(x){return sums[x].slots.some(function(s){return /^(pull|push|legs)-|^x:/.test(s)})})};
+    planned:ad.planned,done:ad.done,mobility:ad.mobility,walkMinutes:walkMinutes(d),morning:morningOf(d),gym:hasType(d,"gym")&&ids.some(function(x){return sums[x].slots.some(function(s){return /^(pull|push|legs)-|^x:/.test(s)})})};
   enqueueIfChanged("d|"+date,"daySummary/all",ds);
   if(hasType(d,"gym")||Object.keys(d.events).length){var t=sessionTiming(d);var sh={days:{}};
     sh.days[date]={session:d.session||null,startedAt:t.start?new Date(t.start).toISOString():null,endedAt:t.end?new Date(t.end).toISOString():null,
@@ -1008,7 +1009,7 @@ async function rebuildHistory(progress){
   rows.forEach(function(r){var d=normDay(r.data,r.id);var sums=summariseExercises(d);
     Object.keys(sums).forEach(function(x){(hist[x]=hist[x]||{days:{}}).days[r.id]=sums[x]});
     var c=slsCalc(d),v=slsVals(d),ad=adherence(d);
-    dsum.days[r.id]={dayType:d.dayType||null,session:d.session||null,sls:{r:v.r,l:v.l,floor:c.floor,scattered:c.scattered,n:c.n},planned:ad.planned,done:ad.done,mobility:ad.mobility,walkMinutes:walkMinutes(d),gym:hasType(d,"gym")&&Object.keys(sums).some(function(x){return sums[x].slots.some(function(s){return /^(pull|push|legs)-|^x:/.test(s)})})};
+    dsum.days[r.id]={dayType:d.dayType||null,session:d.session||null,sls:{r:v.r,l:v.l,floor:c.floor,scattered:c.scattered,n:c.n},planned:ad.planned,done:ad.done,mobility:ad.mobility,walkMinutes:walkMinutes(d),morning:morningOf(d),gym:hasType(d,"gym")&&Object.keys(sums).some(function(x){return sums[x].slots.some(function(s){return /^(pull|push|legs)-|^x:/.test(s)})})};
     if(hasType(d,"gym")||Object.keys(d.events).length){var t=sessionTiming(d);ssum.days[r.id]={session:d.session||null,startedAt:t.start?new Date(t.start).toISOString():null,endedAt:t.end?new Date(t.end).toISOString():null,totalS:Math.round(t.totalS),workS:Math.round(t.workS),restS:Math.round(t.restS),transitionS:Math.round(t.transitionS),stretchS:Math.round(t.stretchS),untimedS:Math.round(t.untimedS),exerciseCount:Object.keys(sums).length,timed:t.timed}}
   });
   var writes=Object.keys(hist).map(function(x){return ["history/"+x,hist[x]]});
@@ -1703,6 +1704,8 @@ function globalBanners(){
   if(S.offline){var un=unsentDays().filter(function(k){return k<todayStr()});
     if(un.length)add("note",h("div",{class:"banner"},h("b",{},un.length+" earlier day"+(un.length===1?"":"s")+" not sent yet. "),"Unsent logs live only on this phone, and clearing Chrome's data would delete them. ",h("button",{type:"button",class:"ibtn go",onClick:function(){go("send")}},"Send")))}
   if(S.rollover&&S.date===S.rollover.from)add("note",h("div",{class:"banner info"},h("b",{},"It's now "+fmtDate(S.rollover.to)+". "),"You're still logging "+fmtDate(S.rollover.from)+". ",h("button",{type:"button",class:"ibtn go",onClick:function(){openDate(S.rollover.to)}},"Switch to today")));
+  var seenV=lsGet("bp-seen-version");
+  if(seenV!==APP_VERSION)add("note",h("div",{class:"banner info"},h("b",{},"Updated to "+APP_VERSION+". "),APP_CHANGES+" ",h("button",{type:"button",class:"ibtn",onClick:function(){lsSet("bp-seen-version",APP_VERSION);render()}},"OK")));
   if(S.progStale)add("note",h("div",{class:"banner"},"Showing the programme saved on this phone. Couldn't confirm it is the latest."));
   if(S.recovered&&S.recovered.length&&S.tab==="today")add("note",recoverBanner());
   // Stop-level banners always show. With more than two other notices, show the first and fold the rest.
@@ -1809,6 +1812,7 @@ function viewToday(){
   var c=cutState();
   if(c&&c.pending)parts.push(h("div",{class:"banner"},h("b",{},"Cut rule. "),fmtShort(c.mornings[0])+" and "+fmtShort(c.mornings[1])+" were scattered. "+c.session+" loads drop 20% next time it runs, and no back-to-back gym days for the rest of that week."));
   var sl=slsCard(d);sl.id="band-sls";parts.push(sl);
+  parts.push(morningCard(d));
   if(d.dayType){
     parts.push(h("h2",{class:"h-section",id:"band-checklist"},"Checklist"));
     parts=parts.concat(checklistBlocks(d,plan));
@@ -1898,6 +1902,28 @@ function slsCard(d){
     h("p",{class:"hint",text:(sd&&sd.cues)||"Right first, then left. Three attempts each."}),
     row("right","Right"),row("left","Left"),
     h("div",{class:"floor"},h("div",{},h("div",{class:"sub",id:"floorLbl"},"Floor"),h("div",{class:"big",id:"floorNum"},"—")),h("span",{id:"floorFlag"})));
+}
+/* ================= MORNING (3.9) =================
+   Waking back pain 0–10 and last night's sleep, asked beside the SLS. Stored in day.morning {pain, sleepH, sleepPos}. */
+var SLEEP_POS=[["back","Back"],["side","Side"],["front","Front"],["mixed","Mixed"]];
+function morningOf(d){var m=(d&&d.morning)||{};return {pain:m.pain==null?null:m.pain,sleepH:m.sleepH==null?null:m.sleepH,sleepPos:m.sleepPos||null}}
+function morningText(m){var b=[];if(m.pain!=null)b.push("Pain "+m.pain+"/10");if(m.sleepH!=null||m.sleepPos)b.push("Sleep "+(m.sleepH!=null?m.sleepH+" h":"")+(m.sleepPos?(m.sleepH!=null?", ":"")+m.sleepPos:""));return b.join(" · ")}
+function morningCard(d){
+  var m=morningOf(d);
+  function set(k,v){S.ui.mornOpen=true;var p={morning:{}};p.morning[k]=v;patchDay(p);render()}
+  if(m.pain!=null&&m.sleepH!=null&&m.sleepPos&&!S.ui.mornOpen)
+    return h("section",{class:"card",id:"band-morning"},h("div",{class:"row-flex",style:"flex-wrap:nowrap"},
+      h("div",{class:"line-main"},h("span",{class:"fl"},"Morning"),h("div",{class:"line-text"},morningText(m))),
+      h("button",{type:"button",class:"btn",onClick:function(){S.ui.mornOpen=true;render()}},"Edit")));
+  var pain=h("div",{class:"knee",role:"group","aria-label":"Back pain on waking, 0 to 10"},[0,1,2,3,4,5,6,7,8,9,10].map(function(i){
+    var on=m.pain===i;return h("button",{type:"button",class:"kc"+(on?" on":""),"aria-pressed":String(on),"aria-label":"Pain "+i,onClick:function(){set("pain",on?null:i)}},h("span",{},String(i)))}));
+  var sleep=stepper("mor-sleep","Sleep hours",m.sleepH,7,0.5,function(v){S.ui.mornOpen=true;patchDay({morning:{sleepH:v}})},"decimal");
+  var pos=h("div",{class:"row-flex",style:"gap:6px;flex-wrap:wrap;justify-content:flex-start"},SLEEP_POS.map(function(o){var on=m.sleepPos===o[0];return toggleChip(o[1],on,function(){set("sleepPos",on?null:o[0])})}));
+  return h("section",{class:"card stack tight",id:"band-morning"},
+    h("div",{class:"row-flex"},h("h2",{class:"h-section"},"Morning"),(m.pain!=null&&m.sleepH!=null&&m.sleepPos)?h("button",{type:"button",class:"ibtn",onClick:function(){S.ui.mornOpen=false;render()}},"Done"):null),
+    h("div",{class:"field"},h("span",{class:"fl"},"Back pain on waking (0–10)"),pain),
+    field("Sleep last night, hours",sleep),
+    h("div",{class:"field"},h("span",{class:"fl"},"Main sleep position"),pos));
 }
 function updateSls(){
   var el=$("#floorNum");if(!el)return;var c=slsCalc(D());
@@ -1998,7 +2024,7 @@ function eodCard(d){
     return field(label,h(area?"textarea":"input",props))}
   var walk=field("Walk, minutes (longest single walk)",stepper("eod-walkMinutes","Walk minutes",e.walkMinutes,null,5,function(v){S.ui.eveningOpen=true;var p={endOfDay:{}};p.endOfDay.walkMinutes=v;patchDay(p)},"numeric"));
   return h("section",{class:"card"},h("h2",{class:"h-section",style:"margin-bottom:10px"},"Evening"),h("div",{class:"eod"},
-    walk,txt("sleep","Sleep (hours, position)",false),txt("symptoms","Symptoms",true),txt("comment","Comment",true)));
+    walk,has("sleep")?txt("sleep","Sleep (old field; now in Morning)",false):null,txt("symptoms","Symptoms",true),txt("comment","Comment",true)));
 }
 
 /* ================= ADD EXERCISE ================= */
@@ -2192,7 +2218,7 @@ function viewProgress(){
   var from=rangeFrom(),seg=progSeg();
   var parts=[askCard(),h("div",{class:"pstick"},rangeChips(),segmented(PSEGS,seg,function(v){S.ui.progSeg=v;try{localStorage.setItem("bp-progseg",v)}catch(e){}render()},"Progress view"))];
   /* only the active segment is built, so only its charts exist */
-  if(seg==="sls")parts.push(slsSection(from));
+  if(seg==="sls"){parts.push(slsSection(from));parts.push(morningSection(from))}
   else if(seg==="training"){parts.push(adherenceSection(from));parts.push(strengthSection(from));parts.push(frequencySection())}
   else if(seg==="balance")parts.push(holdsSection(from));
   else parts.push(timeSection(from));
@@ -2225,6 +2251,22 @@ function slsSection(from){
   card.append(chartBox(chartBase("line",{labels:labels,datasets:[{label:"Mornings ≥45",data:m2,borderColor:acc,stepped:true,pointRadius:0,borderWidth:2},{label:"Needed",data:dates.map(function(){return 5}),borderColor:ink2,borderDash:[6,4],pointRadius:0,borderWidth:1}]},
     {scales:{x:{ticks:{color:ink2,maxTicksLimit:7,maxRotation:0}},y:{min:0,max:7,ticks:{stepSize:1,color:ink2}}}}),true));
   var last=m2[m2.length-1];card.append(h("p",{class:"info small"},"Latest: "+last+" of 7 · "+(last>=5?"M2 met":"M2 not met")));
+  return card;
+}
+function morningSection(from){
+  var days=dsDays(),dates=datesIn(days,from).filter(function(k){var m=days[k].morning;return m&&(m.pain!=null||m.sleepH!=null)});
+  var card=h("section",{class:"card stack tight"},h("h2",{class:"h-section"},"Waking pain and sleep"));
+  if(!dates.length){card.append(h("p",{class:"hint"},"Nothing logged in this range yet. Use the Morning card under the SLS on Today."));return card}
+  var acc=cssVar("--accent"),warn=cssVar("--warn"),ink2=cssVar("--ink2"),line=cssVar("--line");
+  card.append(chartBox(chartBase("bar",{labels:dates.map(fmtShort),datasets:[
+    {type:"line",label:"Pain on waking",data:dates.map(function(k){return days[k].morning.pain}),borderColor:warn,backgroundColor:warn,yAxisID:"y1",pointRadius:3,borderWidth:2,spanGaps:true,order:0},
+    {type:"bar",label:"Sleep, hours",data:dates.map(function(k){return days[k].morning.sleepH}),backgroundColor:acc,yAxisID:"y",order:1,maxBarThickness:18}]},
+    {scales:{x:{ticks:{color:ink2,maxRotation:0,autoSkip:true,maxTicksLimit:7}},y:{min:0,suggestedMax:9,ticks:{color:ink2},title:{display:true,text:"hours",color:ink2},grid:{color:line}},
+      y1:{position:"right",min:0,max:10,ticks:{color:ink2,stepSize:2},title:{display:true,text:"pain /10",color:ink2},grid:{display:false}}}})));
+  var a=autoCrit("pain-zero"),last7=dates.filter(function(k){return daysBetween(k,todayStr())<7}).map(function(k){return days[k].morning.sleepH}).filter(function(v){return v!=null});
+  var pos={};dates.forEach(function(k){var p=days[k].morning.sleepPos;if(p)pos[p]=(pos[p]||0)+1});
+  card.append(h("p",{class:"info small"},a.text+". "+(last7.length?"Average sleep, last 7 days: "+round1(last7.reduce(function(s,v){return s+v},0)/last7.length)+" h. ":"")+
+    (Object.keys(pos).length?"Positions in range: "+Object.keys(pos).map(function(k){return k+" "+pos[k]}).join(", ")+".":"")));
   return card;
 }
 function adherenceSection(from){
@@ -2634,6 +2676,11 @@ function autoCrit(kind){
   var days=dsDays(),t=todayStr();
   if(kind==="m2-rolling"){var c=0,bad=false,n=0;for(var i=0;i<7;i++){var x=days[addDays(t,-i)];if(x&&x.sls&&x.sls.n===6){n++;if(x.sls.floor>=45)c++;if([].concat(x.sls.r||[],x.sls.l||[]).some(function(v){return v!=null&&v<20}))bad=true}}
     return {text:c+" of last 7 mornings ≥45"+(bad?", one under 20":""),met:c>=5&&!bad}}
+  if(kind==="pain-zero"){var start=(days[t]&&days[t].morning&&days[t].morning.pain!=null)?t:addDays(t,-1),n=0,k=start;
+    while(days[k]&&days[k].morning&&days[k].morning.pain===0){n++;k=addDays(k,-1)}
+    var nz=Object.keys(days).filter(function(x){return daysBetween(x,t)<30&&days[x].morning&&days[x].morning.pain>0}).length;
+    var any=Object.keys(days).some(function(x){return days[x].morning&&days[x].morning.pain!=null});
+    return {text:any?n+" zero-pain morning"+(n===1?"":"s")+" in a row logged in the app"+(nz?" · "+nz+" non-zero in the last 30 days":""):"No waking pain logged in the app yet",met:nz?false:n>=30?true:null}}
   if(kind==="walk-max"){var m=0;Object.keys(days).forEach(function(k){if(daysBetween(k,t)<=30&&days[k].walkMinutes)m=Math.max(m,days[k].walkMinutes)});return {text:"Longest walk in 30 days: "+(m?m+" min":"none logged"),met:m>=90}}
   if(kind==="side-plank-max"){var hd=(S.histories["side-plank-knees"]||{}).days||{},r=0,l=0;Object.keys(hd).forEach(function(k){if(daysBetween(k,t)<=30)(hd[k].sets||[]).forEach(function(s){if(s.side==="R")r=Math.max(r,s.holdS||0);if(s.side==="L")l=Math.max(l,s.holdS||0)})});return {text:"Best side plank in 30 days: R "+(r||"–")+" s, L "+(l||"–")+" s",met:null}}
   if(kind==="knee-latest"){var best=null;Object.keys(S.histories).forEach(function(id){var hd2=S.histories[id].days||{};Object.keys(hd2).forEach(function(k){if(hd2[k].kneeMax!=null&&(!best||k>best.k))best={k:k,v:hd2[k].kneeMax}})});return {text:best?"Latest right knee score: "+best.v+"/10 ("+fmtShort(best.k)+")":"No knee score logged yet",met:null}}
@@ -2866,10 +2913,20 @@ function parsePasted(txt){try{var a=txt.indexOf("{"),b=txt.lastIndexOf("}");retu
 function readFileInput(inp,cb){var f=inp.files&&inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){cb(String(r.result||""))};r.readAsText(f)}
 
 /* ---- tracker side: import a log from the offline app ---- */
+/* A day counts as logged in the tracker when the tracker saved it (loggedWith.tracker, 3.9+), or, for older days,
+   when it has data and didn't come from an earlier import. */
+function trackerLogged(ex){
+  if(ex.loggedWith)return !!ex.loggedWith.tracker;
+  if(ex.importedFromOffline)return false;
+  var en=ex.entries||{},it=ex.items||{},sl=ex.sls||{};
+  return Object.keys(en).some(function(k){return en[k]&&!en[k].deleted})||Object.keys(it).some(function(k){return it[k]&&(it[k].tick==="on"||(it[k].note&&String(it[k].note).trim()))})||
+    ["right","left"].some(function(sd){var x=sl[sd]||{};return x.a1!=null||x.a2!=null||x.a3!=null});
+}
 function importOfflineLog(obj){
   if(!obj||obj.type!=="bp-offline-log")return {error:"That isn't a log from the offline app. In the offline app, use Send › Copy log."};
-  var n=0,sets=0;
+  var n=0,sets=0,conflicts=[];
   Object.keys(obj.days||{}).sort().forEach(function(date){var doc=clone(obj.days[date]);if(!doc)return;
+    var ex=S.remote[date]||S.recent[date];if(ex&&trackerLogged(ex))conflicts.push(date);
     delete doc.derivedExercises;delete doc.createdAt;doc.importedFromOffline=new Date().toISOString();
     for(var k in (doc.entries||{}))if(doc.entries[k]&&!doc.entries[k].deleted)sets++;
     enqueue("days/"+date,doc);S.recent[date]=deepMerge(S.recent[date]||{},doc);scheduleDerived(date);n++});
@@ -2878,7 +2935,7 @@ function importOfflineLog(obj){
   if(os.lastSession&&(!cur.lastSession||os.lastSession.date>cur.lastSession.date)){var sp={rotationIndex:os.rotationIndex,owedSession:os.owedSession||null,lastSession:os.lastSession};enqueue("state/current",sp);applyLocally("state/current",sp)}
   if(os.sideMode){var sm={sideMode:os.sideMode};enqueue("state/current",sm);applyLocally("state/current",sm)}
   buildIndex();
-  return {days:n,sets:sets};
+  return {days:n,sets:sets,conflicts:conflicts};
 }
 function viewOfflineTracker(){
   setBar("Library","Offline app");
@@ -2889,13 +2946,14 @@ function viewOfflineTracker(){
     S.downloads?h("button",{type:"button",class:"btn",onClick:function(ev){var b=ev.target;S.downloads.save({filename:"tracker-update-"+todayStr()+".json",data:JSON.stringify(buildTrackerUpdate())}).then(function(){b.textContent="Saved"},function(){b.textContent="Not saved"})}},"Save as a file instead"):null));
   var ta=h("textarea",{id:"imp-ta",placeholder:"Tap here, then Paste. It imports by itself.",style:"min-height:120px;font-size:18px;text-align:center"});
   function tryImport(txt){var obj=parsePasted(txt);if(!obj||obj.type!=="bp-offline-log")return false;var r=importOfflineLog(obj);
-    S.ui.impMsg=r.error?{err:true,t:r.error}:{t:"Imported "+r.days+" day"+(r.days===1?"":"s")+". Saving to Claude now: the pill goes back to Saved when it's done."};ta.value="";render();return true}
+    S.ui.impMsg=r.error?{err:true,t:r.error}:{warn:!!(r.conflicts&&r.conflicts.length),t:"Imported "+r.days+" day"+(r.days===1?"":"s")+". Saving to Claude now: the pill goes back to Saved when it's done."+
+      (r.conflicts&&r.conflicts.length?" Check "+r.conflicts.map(fmtShort).join(", ")+": "+(r.conflicts.length===1?"that day was":"those days were")+" also logged here in the tracker. Both sets of entries were kept; where the same set was in both, the offline one replaced the tracker's.":"")};ta.value="";render();return true}
   ta.addEventListener("paste",function(ev){var t=ev.clipboardData&&ev.clipboardData.getData("text");if(t&&tryImport(t))ev.preventDefault()});
   ta.addEventListener("input",function(){if(ta.value.length>20)tryImport(ta.value)});
   var fi=h("input",{type:"file",id:"imp-file",accept:".json,application/json,text/plain",onChange:function(){readFileInput(fi,function(t){if(!tryImport(t)){S.ui.impMsg={err:true,t:"That file isn't a log from the offline app."};render()}})}});
   var first=S.ui.impMsg?null:h("div",{class:"banner info"},h("b",{},"From the offline app? "),"Tap the box below and choose Paste.");
   parts.unshift(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"Import from the offline app"),first,ta,
-    S.ui.impMsg?h("div",{class:"banner"+(S.ui.impMsg.err?" stop":" info")},S.ui.impMsg.t):null,
+    S.ui.impMsg?h("div",{class:"banner"+(S.ui.impMsg.err?" stop":S.ui.impMsg.warn?"":" info")},S.ui.impMsg.t):null,
     h("label",{class:"field"},h("span",{class:"fl"},"Or choose a file"),fi)));
   parts.push(h("p",{class:"info small"},"The offline app lives at randompcnameforme-droid.github.io/back-tracker-offline. Open it in Chrome and choose Add to home screen."));
   return parts;
@@ -2940,6 +2998,7 @@ function viewSend(){
   parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"Send your log"),
     h("p",{class:"info"},un.length?un.length+" day"+(un.length===1?"":"s")+" not sent yet: "+un.map(fmtShort).join(", "):"Everything has been sent."),
     h("p",{class:"hint"},"Needs a connection. Copies your log, then open the tracker › More › Offline app › paste › Import."),
+    h("p",{class:"hint"},h("b",{},"Log each day in one app. "),"If you start a day here, finish it here and send it. Logging the same day in both apps can replace sets."),
     h("button",{type:"button",class:"btn primary wide",style:"min-height:56px;font-size:17px",onClick:function(ev){var btn=ev.target;
       var store=window.__LOCALDB.store,days={};
       SYNC.outbox.forEach(function(e){var m=/^days\/(.+)$/.exec(e.path);if(m)days[m[1]]=1});
@@ -2960,6 +3019,7 @@ function viewSend(){
     h("button",{type:"button",class:"btn primary",onClick:function(){var r=loadTrackerUpdate(parsePasted(ta.value));
       S.ui.updMsg=r.error?{err:true,t:r.error}:{t:"Update loaded. Today's list and suggestions now match the tracker."};if(!r.error)ta.value="";setTimeout(render,100)}},"Load update"),
     S.ui.updMsg?h("div",{class:"banner"+(S.ui.updMsg.err?" stop":" info")},S.ui.updMsg.t):null,out));
+  parts.push(h("p",{class:"info small"},"Offline app version "+APP_VERSION+" · programme "+(S.programme&&S.programme.programmeVersion||"—")));
   return parts;
 }
 

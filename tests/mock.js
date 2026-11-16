@@ -1,10 +1,11 @@
 (function(){
-  var store=window.__SEED||{};
+  // the store survives page reloads in the same tab, like the real database
+  var store=(function(){try{var x=sessionStorage.getItem("__mockStore");if(x)return JSON.parse(x)}catch(e){}return window.__SEED||{}})();
   var subs=[];var M=window.__MOCK={store:store,hang:false,fail:null,writes:0,calls:[]};
   function clone(o){return o==null?o:JSON.parse(JSON.stringify(o))}
   function isObj(o){return o&&typeof o==="object"&&!Array.isArray(o)}
   function merge(a,b){for(var k in b){var v=b[k];if(isObj(v)&&isObj(a[k]))merge(a[k],v);else a[k]=clone(v)}return a}
-  function notify(){subs.forEach(function(s){try{s()}catch(e){console.error(e)}})}
+  function notify(){try{sessionStorage.setItem("__mockStore",JSON.stringify(store))}catch(e){}subs.forEach(function(s){try{s()}catch(e){console.error(e)}})}
   function delay(v){return new Promise(function(res,rej){if(M.hang)return; if(M.fail){var f=M.fail;return setTimeout(function(){rej({code:f,message:"mock fail"})},50)} setTimeout(function(){res(v)},30)})}
   function snapOf(path){var d=store[path];return {id:path.split("/").pop(),exists:!!d,data:function(){return clone(d)},metadata:{fromCache:false,hasPendingWrites:false}}}
   function docRef(path){return {id:path.split("/").pop(),path:path,
