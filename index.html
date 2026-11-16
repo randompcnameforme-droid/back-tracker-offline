@@ -1551,6 +1551,7 @@ function safeDec(s){try{return decodeURIComponent(s)}catch(e){return s}}
 function parseHash(){
   var x=(location.hash||"").replace(/^#/,"");
   if(!x)return {tab:"today",sub:null};
+  if(x==="import"&&!window.__OFFLINE)return {tab:"library",sub:"offline"};
   var i=x.indexOf("/"),t=normTab(i<0?x:x.slice(0,i)),s=i<0?"":safeDec(x.slice(i+1));
   if(TABS.indexOf(t)<0)return {tab:"today",sub:null};
   return {tab:t,sub:t==="today"?null:(s||null)};
@@ -2875,19 +2876,20 @@ function importOfflineLog(obj){
 function viewOfflineTracker(){
   setBar("Library","Offline app");
   var parts=[];
-  parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"1 · Update the offline app"),
+  parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"Update the offline app"),
     h("p",{class:"hint"},"Copies the programme, rotation and recent history so the offline app's checklist and suggestions are current. Paste it into the offline app under Send › Load update."),
     h("button",{type:"button",class:"btn primary",onClick:function(ev){copyText(JSON.stringify(buildTrackerUpdate()),ev.target)}},"Copy update for offline app"),
     S.downloads?h("button",{type:"button",class:"btn",onClick:function(ev){var b=ev.target;S.downloads.save({filename:"tracker-update-"+todayStr()+".json",data:JSON.stringify(buildTrackerUpdate())}).then(function(){b.textContent="Saved"},function(){b.textContent="Not saved"})}},"Save as a file instead"):null));
-  var ta=h("textarea",{id:"imp-ta",placeholder:"Paste the log from the offline app here",style:"min-height:110px"});
-  var out=h("div");
-  var fi=h("input",{type:"file",id:"imp-file",accept:".json,application/json,text/plain",onChange:function(){readFileInput(fi,function(t){ta.value=t})}});
-  parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"2 · Import from the offline app"),
-    h("p",{class:"hint"},"Paste what the offline app copied, or choose the file it saved. Importing the same log twice is harmless."),ta,
-    h("label",{class:"field"},h("span",{class:"fl"},"Or choose a file"),fi),
-    h("button",{type:"button",class:"btn primary",onClick:function(){var r=importOfflineLog(parsePasted(ta.value));
-      S.ui.impMsg=r.error?{err:true,t:r.error}:{t:"Imported "+r.days+" day"+(r.days===1?"":"s")+" ("+r.sets+" sets). They save to Claude now: watch the pill go back to Saved."};if(!r.error)ta.value="";render()}},"Import"),
-    S.ui.impMsg?h("div",{class:"banner"+(S.ui.impMsg.err?" stop":" info")},S.ui.impMsg.t):null,out));
+  var ta=h("textarea",{id:"imp-ta",placeholder:"Tap here, then Paste. It imports by itself.",style:"min-height:120px;font-size:18px;text-align:center"});
+  function tryImport(txt){var obj=parsePasted(txt);if(!obj||obj.type!=="bp-offline-log")return false;var r=importOfflineLog(obj);
+    S.ui.impMsg=r.error?{err:true,t:r.error}:{t:"Imported "+r.days+" day"+(r.days===1?"":"s")+". Saving to Claude now: the pill goes back to Saved when it's done."};ta.value="";render();return true}
+  ta.addEventListener("paste",function(ev){var t=ev.clipboardData&&ev.clipboardData.getData("text");if(t&&tryImport(t))ev.preventDefault()});
+  ta.addEventListener("input",function(){if(ta.value.length>20)tryImport(ta.value)});
+  var fi=h("input",{type:"file",id:"imp-file",accept:".json,application/json,text/plain",onChange:function(){readFileInput(fi,function(t){if(!tryImport(t)){S.ui.impMsg={err:true,t:"That file isn't a log from the offline app."};render()}})}});
+  var first=S.ui.impMsg?null:h("div",{class:"banner info"},h("b",{},"From the offline app? "),"Tap the box below and choose Paste.");
+  parts.unshift(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"Import from the offline app"),first,ta,
+    S.ui.impMsg?h("div",{class:"banner"+(S.ui.impMsg.err?" stop":" info")},S.ui.impMsg.t):null,
+    h("label",{class:"field"},h("span",{class:"fl"},"Or choose a file"),fi)));
   parts.push(h("p",{class:"info small"},"The offline app lives at randompcnameforme-droid.github.io/back-tracker-offline. Open it in Chrome and choose Add to home screen."));
   return parts;
 }
@@ -2925,18 +2927,24 @@ function viewSend(){
   setBar("Offline app","Send to tracker");
   var parts=[],un=unsentDays();
   var link=h("a",{class:"btn wide",href:TRACKER_URL,target:"_blank",rel:"noopener",style:"display:grid;place-items:center;text-decoration:none"},"Open the tracker");
-  parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"1 · Send your log"),
+  parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"Send your log"),
     h("p",{class:"info"},un.length?un.length+" day"+(un.length===1?"":"s")+" not sent yet: "+un.map(fmtShort).join(", "):"Everything has been sent."),
     h("p",{class:"hint"},"Needs a connection. Copies your log, then open the tracker › More › Offline app › paste › Import."),
-    h("button",{type:"button",class:"btn primary",onClick:function(ev){var btn=ev.target;
-      Promise.resolve(drain()).then(function(){var un2=unsentDays();if(!un2.length){btn.textContent="Nothing new to send";return}
-        copyText(JSON.stringify(buildOfflineLog(un2)),btn);markSent(un2);updatePill();setTimeout(render,1600)})}},"Copy log"),
-    link,
+    h("button",{type:"button",class:"btn primary wide",style:"min-height:56px;font-size:17px",onClick:function(ev){var btn=ev.target;
+      var store=window.__LOCALDB.store,days={};
+      SYNC.outbox.forEach(function(e){var m=/^days\/(.+)$/.exec(e.path);if(m)days[m[1]]=1});
+      unsentDays().forEach(function(k){days[k]=1});var list=Object.keys(days).sort();
+      if(!list.length){btn.textContent="Nothing new to send";return}
+      var lg=buildOfflineLog(list);
+      list.forEach(function(k){lg.days[k]=deepMerge(store["days/"+k]||{},pendingFor("days/"+k))});
+      copyText(JSON.stringify(lg),null);markSent(list);
+      try{window.open(TRACKER_URL+"#import","_blank")}catch(e){}
+      btn.textContent="Copied. In the tracker, tap the box and Paste";setTimeout(function(){kick();render()},4000)}},"Send to tracker"),
     h("button",{type:"button",class:"btn ghost",onClick:function(ev){var all=Object.keys(window.__LOCALDB.store).map(function(p){var m=/^days\/(.+)$/.exec(p);return m&&m[1]}).filter(Boolean).filter(function(k){return daysBetween(k,todayStr())<=14}).sort();copyText(JSON.stringify(buildOfflineLog(all)),ev.target)}},"Copy the last 14 days again")));
   var ta=h("textarea",{id:"upd-ta",placeholder:"Paste the update from the tracker here",style:"min-height:110px"}),out=h("div");
   var fi=h("input",{type:"file",id:"upd-file",accept:".json,application/json,text/plain",onChange:function(){readFileInput(fi,function(t){ta.value=t})}});
   var at=lsGet("bp-update-at");
-  parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"2 · Load an update from the tracker"),
+  parts.push(h("section",{class:"card stack tight"},h("h2",{class:"lbl pad"},"Load an update from the tracker"),
     h("p",{class:"hint"},(at?"Last update: "+fmtDate(at.slice(0,10))+". ":"No update loaded yet. ")+"In the tracker: More › Offline app › Copy update. Then paste here. Do this when the programme changes or about once a week."),ta,
     h("label",{class:"field"},h("span",{class:"fl"},"Or choose a file"),fi),
     h("button",{type:"button",class:"btn primary",onClick:function(){var r=loadTrackerUpdate(parsePasted(ta.value));
