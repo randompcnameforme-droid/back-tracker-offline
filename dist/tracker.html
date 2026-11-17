@@ -404,8 +404,8 @@ tr:last-child td{border-bottom:0}
 (function(){
 "use strict";
 /* ================= CORE HELPERS ================= */
-var APP_VERSION="3.10.0";
-var APP_CHANGES="New session dock at the bottom of every tab: one Start/Stop button, tap any exercise in the strip to switch, in any order. Holds keep counting past the target. Home and office blocks are timed too.";
+var APP_VERSION="3.10.1";
+var APP_CHANGES="The session dock now works after midnight: until 4 am you can open yesterday and time its session, and a session that runs past midnight keeps its dock until you finish it.";
 var DAY_TYPES=[["gym","Gym"],["home","Home"],["office","Office"]];
 var ICON={
   check:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
@@ -1725,6 +1725,10 @@ function globalBanners(){
   if(SYNC.blocked&&SYNC.lastError)add("stop",h("div",{class:"banner stop"},h("b",{},"Not saving. "),errText(SYNC.lastError.code)+" ",h("button",{type:"button",class:"ibtn",onClick:function(){go("library","sync")}},"Details")));
   if(S.offline){var un=unsentDays().filter(function(k){return k<todayStr()});
     if(un.length)add("note",h("div",{class:"banner"},h("b",{},un.length+" earlier day"+(un.length===1?"":"s")+" not sent yet. "),"Unsent logs live only on this phone, and clearing Chrome's data would delete them. ",h("button",{type:"button",class:"ibtn go",onClick:function(){go("send")}},"Send")))}
+  var yd=addDays(todayStr(),-1);
+  if(lateHours()&&S.date===todayStr()&&S.tab==="today"){var yv=dayView(yd),tv=D();
+    if((yv.dayType||S.remote[yd]||S.recent[yd])&&!workoutState(tv).running&&!(S.rollover&&S.rollover.from===yd))
+      add("note",h("div",{class:"banner info"},h("b",{},"After midnight. "),"Still doing "+fmtDate(yd)+"'s session? Log and time it on that day. ",h("button",{type:"button",class:"ibtn go",onClick:function(){openDate(yd)}},"Open "+fmtDate(yd))))}
   if(S.rollover&&S.date===S.rollover.from)add("note",h("div",{class:"banner info"},h("b",{},"It's now "+fmtDate(S.rollover.to)+". "),"You're still logging "+fmtDate(S.rollover.from)+". ",h("button",{type:"button",class:"ibtn go",onClick:function(){openDate(S.rollover.to)}},"Switch to today")));
   var seenV=lsGet("bp-seen-version");
   if(seenV!==APP_VERSION)add("note",h("div",{class:"banner info"},h("b",{},"Updated to "+APP_VERSION+". "),APP_CHANGES+" ",h("button",{type:"button",class:"ibtn",onClick:function(){lsSet("bp-seen-version",APP_VERSION);render()}},"OK")));
@@ -1752,7 +1756,7 @@ function renderTabs(){
 /* Small accent dot on the Workout tab while today's workout clock is running. */
 function updateTabDot(){
   var dot=$("#tabs .wdot");if(!dot||!P)return;
-  var run=false;try{run=!!workoutState(dayView(todayStr())).running}catch(e){}
+  var run=false;try{run=!!workoutState(dayView(todayStr())).running||(S.date!==todayStr()&&timingDay()&&!!workoutState(D()).running)}catch(e){}
   dot.hidden=!run;
   var b=dot.closest(".tab");if(b){if(run)b.setAttribute("aria-label","Workout, workout running");else b.removeAttribute("aria-label")}
 }
@@ -2000,7 +2004,17 @@ function openDockAll(){
   sh=sheet("All items",[body]);draw();
 }
 /* --- drawing --- */
-function dockShown(){var d=D();return !!(P&&S.programme&&S.date===todayStr()&&d.dayType)}
+/* The dock times the open day when it is today, or yesterday after midnight: until 04:00, or for as long as a
+   session or set started on it is still running (a late session past midnight keeps its dock until it is finished). */
+var LATE_UNTIL_H=4;
+function lateHours(){return new Date().getHours()<LATE_UNTIL_H}
+function timingDay(){
+  var t=todayStr();if(S.date===t)return true;
+  if(S.date!==addDays(t,-1))return false;
+  if(lateHours())return true;
+  var d=D();return workoutState(d).running||!!activeTimer(d);
+}
+function dockShown(){var d=D();return !!(P&&S.programme&&timingDay()&&d.dayType)}
 function unitLabel(u){
   var def=u.def,bits=[String(def.name||"").split(",")[0].trim()];
   bits.push(u.extra?"set "+u.n+" (extra)":"set "+u.n+" of "+u.planned);
@@ -2108,7 +2122,7 @@ function dockClocks(){
 function dockTick(){
   if(!P)return;
   updateTabDot();
-  if(S.date!==todayStr())return;
+  if(!timingDay())return;
   var d=D(),act=activeTimer(d),now=Date.now();
   if(act){var def=anyDef(act.slot,d);def=def&&effDef(def,d);var tg=holdTarget(def),el=(now-act.t)/1000;
     if(tg&&el>=tg&&el<tg+5&&TIMER.beepedFor!==act.t){TIMER.beepedFor=act.t;beep()}

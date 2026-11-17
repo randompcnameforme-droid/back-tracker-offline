@@ -132,6 +132,30 @@ const failures=[];function check(name,ok,extra){console.log((ok?'PASS ':'FAIL ')
   const sh2=await q2.evaluate(t=>{const s=window.__MOCK.store['sessionHistory/all'];return s&&s.days&&s.days[t]},T);
   check('timeline and sessionHistory list the home session',await q2.getByText(/^Home · \d\d:\d\d–/).count()===1&&!!sh2&&Object.values(sh2.sessions||{}).some(x=>x.ctx==='home'&&x.workS>=19),JSON.stringify(sh2&&sh2.sessions));
   await ctx3.close();
+  // ---- after midnight (3.10.1): yesterday's session can still be timed
+  {
+    const ctx4=await b.newContext({viewport:{width:390,height:844}});await ctx4.route(/cdn\.jsdelivr|fonts\.googleapis|claude\.ai/,r=>r.fulfill({body:''}));
+    await ctx4.clock.install({time:new Date(2027,2,2,0,1,0)});
+    const m=await ctx4.newPage();m.on('pageerror',e=>errs.push('midnight: '+e.message));
+    await m.goto('file://'+path.join(out,'harness.html'));await m.waitForTimeout(1500);
+    await m.getByRole('button',{name:'Previous day'}).click();await m.waitForTimeout(300);
+    await m.getByRole('button',{name:'Gym',exact:true}).click();await m.waitForTimeout(300);
+    const lbl=await m.locator('#dock .dock-main').textContent().catch(()=>'no dock');
+    await m.locator('#dock .dock-main').click();await m.waitForTimeout(200);
+    await m.locator('#dock .dock-main').click();await m.clock.fastForward(30000);await m.locator('#dock .dock-main').click();
+    await m.clock.fastForward(2000);await m.waitForTimeout(400);
+    const yd=await m.evaluate(()=>window.__MOCK.store['days/2027-03-01']);
+    const timed=yd&&Object.values(yd.entries||{}).some(e=>e&&e.startedAt&&e.endedAt);
+    check('after midnight: yesterday shows the dock and times a set',lbl==='Start gym session'&&timed,lbl);
+    await m.reload();await m.waitForTimeout(1500);
+    const ban=m.getByRole('button',{name:/^Open Mon/});const hasBan=await ban.count();
+    if(hasBan)await ban.click();await m.waitForTimeout(400);
+    const back=await m.locator('#dock .dock-main').textContent().catch(()=>'no dock');
+    await m.clock.fastForward(5*3600*1000);await m.waitForTimeout(1300);
+    const at5=await m.locator('#dock').isVisible();
+    check('after midnight: banner reopens yesterday; a running session keeps its dock past 4 am',hasBan===1&&/Start/.test(back)&&at5,JSON.stringify({hasBan,back,at5}));
+    await ctx4.close();
+  }
   // ---- offline
   await p.goto('file://'+path.join(out,'harness.html')+'#import');await p.waitForTimeout(1000);
   await p.goto('file://'+path.join(out,'harness.html'));await p.waitForTimeout(1000);
