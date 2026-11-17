@@ -389,6 +389,26 @@ tr:last-child td{border-bottom:0}
 .dock-fin{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:44px;display:flex;align-items:center}
 .dall-row{display:flex;align-items:center}
 .dall-row .row-text{flex:1}
+/* v3.11 Session tab */
+#sessRoot{display:flex;flex-direction:column;gap:12px;height:calc(100dvh - var(--bar-h,56px) - var(--tabs-h,58px) - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:420px}
+.sess-timer{flex:none;display:grid;gap:6px;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.sess-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;gap:12px;padding-bottom:8px}
+.sess-timer.timing{border-color:var(--accent)}
+.dock-pair{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:8px}
+.dock-pause{height:64px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font:700 17px/1 var(--font-head)}
+.dock-pause.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dock-big.paused,.dock-cclock.paused{color:var(--warn)}
+.dock-acts{display:flex;flex-wrap:wrap;gap:0 4px;margin-inline:-6px}
+.dock-acts .textbtn{min-height:40px}
+.dock-last{display:flex;align-items:center;min-width:0;font-size:14px;color:var(--ink2)}
+.dock.mini .dock-cname{border:0;background:none;padding:0 4px;text-align:left;min-height:44px;color:var(--ink);font:600 15px var(--font-body)}
+.srow{display:flex;align-items:center;gap:4px;padding-right:6px}
+.srow .row-text{flex:1;padding:8px 12px}
+.srow.on{box-shadow:inset 4px 0 0 var(--accent);background:var(--accent-soft)}
+.srow.is-done .nm{color:var(--ink2)}
+.srow .row-text[disabled]{opacity:.5}
+.srow-cues{color:var(--ink)}
+.tabs-in .tab{font-size:11px}
 </style>
 <div class="bar"><div class="bar-in">
   <div class="bar-main" id="barMain"></div>
